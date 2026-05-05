@@ -1,0 +1,110 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pkl
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# Logs
+*.log
+logs/
+
+# Environments
+.env
+.venv/
+venv/
+ENV/
+
+# MyPy
+.mypy_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Test
+.tox/
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# Database
+*.sqlite3
+*.db
+
+# Others
+.idea/
+*.swp
+
+# Node
+node_modules/
+
+# Ignore data/output folders
+/data/
+/output/
+
+# Ignore backup files
+*.bak
+*.tmp
+
+# Ignore system files
+Thumbs.db
+
+# Ignore user-specific files
+*.user
+*.suo
+
+# Ignore compiled shared objects
+*.so
+
+# Ignore checkpoints
+checkpoints/
+
+# Ignore cache
+.cache/
+
+# Ignore coverage
+.coverage*
+
+# Ignore pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Ignore pytest
+.pytest_cache/
+
+# Ignore notebook metadata
+*.nbmetadata
+
+# Ignore local config
+local_settings.py
+
+# Ignore experiment outputs
+runs/
+
+# Ignore JSONL outputs
+*.jsonl
+wandb/
+
+# Ignore assets
+assets/
+*_dataset_progress.json
