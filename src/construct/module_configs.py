@@ -1,18 +1,19 @@
-from pathlib import Path
+from configs import (
+    ASSETS_DIR,
+    LOGS_DIR,
+    OUTPUT_DIR,
+)
 
 # =============================================================================
 # 主要配置
 # =============================================================================
 
-PROJECT_NAME = "cap-bench-pipeline"
+MODULE_NAME = "construct"
 
 # =============================================================================
 # 路径与派生配置
 # =============================================================================
 
-CURRENT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CURRENT_DIR.parent
-
-ASSETS_DIR = PROJECT_ROOT / "assets"
-OUTPUT_DIR = PROJECT_ROOT / "output"
-LOGS_DIR = PROJECT_ROOT / "logs"
+MODULE_LOGS_DIR = LOGS_DIR / MODULE_NAME
+MODULE_OUTPUT_DIR = OUTPUT_DIR / MODULE_NAME
+MODULE_ASSETS_DIR = ASSETS_DIR / MODULE_NAME
