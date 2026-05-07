@@ -25,28 +25,28 @@ class Proposer:
         prompt_template = prompt_path.read_text(encoding="utf-8")
 
         input_section = f"""
-        ## Input Materials
+        ## 输入材料
 
-        ### Sampling Result
+        ### 采样结果
 
         ```json
         {json.dumps(sampling_result, ensure_ascii=False, indent=2)}
         ```
 
-        ### Function Point List
+        ### 功能点清单
 
         ```json
         {json.dumps(cluster_functions, ensure_ascii=False, indent=2)}
         ```
 
-        Please generate {num_proposals} task proposals.
+        请生成 {num_proposals} 个任务提案。
         """
         user_prompt = prompt_template + input_section
-        logger.debug(f"Proposal stage prompt (input section): {input_section}")
+        logger.debug(f"任务提议阶段提示词（输入部分）: {input_section}")
 
         llm = LLMService()
         response = llm.chat(
-            system_prompt="You are a task proposer for the AI Browser Benchmark.",
+            system_prompt="你是AI浏览器Benchmark的任务提议者。",
             user_prompt=user_prompt,
         )
 
@@ -80,6 +80,6 @@ class Proposer:
         try:
             return json.loads(response)
         except json.JSONDecodeError as e:
-            logger.warning(f"JSON parsing failed: {e}")
-            logger.debug(f"Raw response content: {response}")
+            logger.warning(f"JSON解析失败: {e}")
+            logger.debug(f"原始响应内容: {response}")
             raise
