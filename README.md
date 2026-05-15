@@ -139,8 +139,6 @@ python src/main_construct.py --total 100 --num 10
 
 **Evaluation.** Each task is automatically converted into a Python evaluation script that materializes a hierarchical rubric tree. Leaves are typed as **action**, **perception**, or **other**, and may be marked critical (failure zeroes its parent). A judge agent traverses the tree, extracts structured information from the agent's answer, and verifies each claim against live webpages.
 
-For deep dives, see the per-package CLAUDE.md files under `src/evaluate/cap_eval/`.
-
 ## Cache Manager
 
 Webpage retrieval is rate-limited and noisy. `src/evaluate/cache_manager_web/` is a small FastAPI + browser-extension tool to inspect and re-capture problematic cached pages. See `src/evaluate/cache_manager_web/README.md`.
