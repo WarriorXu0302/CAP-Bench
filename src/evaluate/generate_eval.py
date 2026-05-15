@@ -1,39 +1,84 @@
+"""Generate a per-task evaluation script from a task JSON using an LLM.
+
+Inputs:
+  --json_path        Path to a task JSON containing task_id, task_description,
+                     information_flow_summary, covered_points
+  --reference_script Path to a reference Python script the LLM should imitate.
+                     Defaults to eval_scripts/<eval_version>/<task-1533cc>.py
+                     under the cap-eval project root.
+  --output_dir       Where to write the generated <task_id>.py
+  --eval_version     Version subfolder under eval_scripts/ (default: 2026_03_13)
+  --model            LLM model id used to synthesise the script
+                     (default: gpt-4o, override via OPENAI_MODEL env var)
+
+Environment:
+  OPENAI_API_KEY     Required.
+  OPENAI_BASE_URL    Optional. Set this to point at any OpenAI-compatible
+                     endpoint (Azure, vLLM, LiteLLM proxy, etc.).
+  OPENAI_MODEL       Optional default model id.
+"""
+
 import argparse
 import json
-import openai
+import os
 from pathlib import Path
 
-def main():
-    # 1. & 3. 使用 add_argument 传参，新增 output_dir 用于保存文件
-    parser = argparse.ArgumentParser(description="Generate evaluation script based on JSON task info and a reference Python template.")
-    parser.add_argument("--json_path", type=str, required=True, help="Path to the input JSON file")
-    parser.add_argument("--py_path", type=str, default="/home/devuser/guyongtong/cap-bench-pipeline/cap-bench-pipeline-main/src/evaluate/eval_scripts/task-1533cc.py", help="Path to the reference Python file")
-    parser.add_argument("--output_dir", type=str, default="/home/yongtong/seu/cap-eval/eval_scripts/2026_03_13", help="Directory to save the generated Python file")
-    args = parser.parse_args()
+import openai
 
-    # 2. 解析 JSON 文件并提取指定字段
-    with open(args.json_path, 'r', encoding='utf-8') as f:
+
+REPO_ROOT = Path(__file__).resolve().parent
+DEFAULT_EVAL_VERSION = "2026_03_13"
+DEFAULT_REFERENCE = REPO_ROOT / "eval_scripts" / DEFAULT_EVAL_VERSION / "task-1533cc.py"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Generate a CAP-Eval evaluation script for a single task.",
+    )
+    parser.add_argument(
+        "--json_path", type=Path, required=True,
+        help="Path to the input task JSON file",
+    )
+    parser.add_argument(
+        "--reference_script", type=Path, default=None,
+        help=f"Reference Python template (default: {DEFAULT_REFERENCE})",
+    )
+    parser.add_argument(
+        "--output_dir", type=Path, default=None,
+        help=f"Output directory (default: eval_scripts/<eval_version>/)",
+    )
+    parser.add_argument(
+        "--eval_version", default=DEFAULT_EVAL_VERSION,
+        help=f"Evaluation script version subfolder (default: {DEFAULT_EVAL_VERSION})",
+    )
+    parser.add_argument(
+        "--model", default=os.getenv("OPENAI_MODEL", "gpt-4o"),
+        help="LLM model id (default: $OPENAI_MODEL or gpt-4o)",
+    )
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+
+    reference_script = args.reference_script or DEFAULT_REFERENCE
+    output_dir = args.output_dir or (REPO_ROOT / "eval_scripts" / args.eval_version)
+
+    with open(args.json_path, "r", encoding="utf-8") as f:
         full_json_data = json.load(f)
-        
+
     context = {
         "task_id": full_json_data.get("task_id"),
         "task_description": full_json_data.get("task_description"),
         "information_flow_summary": full_json_data.get("information_flow_summary"),
-        "covered_points": full_json_data.get("covered_points")
+        "covered_points": full_json_data.get("covered_points"),
     }
 
-    # 获取 task_id 用于后续给新文件命名
-    task_id = context.get("task_id")
-    if not task_id:
-        # 容错处理：如果 JSON 中没有 task_id 字段
-        task_id = "generated_task_default"
-        print(f"⚠️ 警告: JSON 中未找到 'task_id'，将使用默认名称 '{task_id}'")
+    task_id = context.get("task_id") or "generated_task_default"
 
-    # 读取 py 参考代码
-    with open(args.py_path, 'r', encoding='utf-8') as f:
+    with open(reference_script, "r", encoding="utf-8") as f:
         reference_code = f.read()
 
-    # 拼接 Prompt (完全基于你提供的模板，不做任何改动)
     prompt = f"""You are a skilled evaluation annotator. Please write a Python evaluation script based
 on the CAP-Eval framework for a new task, using the following task information
 and reference code.
@@ -41,7 +86,7 @@ and reference code.
 {json.dumps(context, indent=2, ensure_ascii=False)}
 ### Core Requirements
 1. Focus on covered_points & Node Naming: Design evaluation points based on the covered_points field.
-- ONLY add the "[Action Node]" or "[Perception Node]" prefix to the `desc` field if the node directly corresponds to a specific point_id in `covered_points`. 
+- ONLY add the "[Action Node]" or "[Perception Node]" prefix to the `desc` field if the node directly corresponds to a specific point_id in `covered_points`.
 - Other regular nodes, container nodes, or general validation nodes MUST NOT have these prefixes.
 - point_id examples: "ikea.com:F2:A8" (Action) or "ikea.com:F9:P6" (Perception).
 2. Minimize Critical Nodes (Allow Partial Scoring):
@@ -68,7 +113,7 @@ add sequential execution container nodes.
 determine subsequent logic, but do not want to draw this node on the evaluation
 tree, use await evaluator.verify(node=None, ...).
 3. Strictly Prohibit Hallucinations (Negative Constraints):
-- Prohibited Usage: add_sequence (missing ’ial’), add_serial, update_node_result.
+- Prohibited Usage: add_sequence (missing 'ial'), add_serial, update_node_result.
 - Prohibited Attribute Access: The Evaluator object does not have .logger or
 .answer attributes.
 - Correct Practice: logger and answer are arguments of the evaluate_answer
@@ -80,45 +125,35 @@ arguments: client, answer, cache, semaphore, logger, model etc.).
 ### Reference Code Template
 Please imitate the structure, import style, and verification logic of the following
 code:
-—
+---
 {reference_code}
-—
+---
 Please output the Python code directly. Do not include Markdown code block markers,
 and ensure the code is directly executable. """
 
-    # 4. 调用大模型
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise SystemExit("OPENAI_API_KEY is not set. Export it before running.")
+
     client = openai.OpenAI(
-        api_key="......",
-        base_url="https://litellm.fellou.ai" 
+        api_key=api_key,
+        base_url=os.getenv("OPENAI_BASE_URL"),
     )
 
-    print("🚀 正在调用大模型生成代码，请稍候...")
+    print(f"Calling {args.model} to generate evaluation script for {task_id}...")
     response = client.chat.completions.create(
-        model='openai/gpt-5', 
-        messages = [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+        model=args.model,
+        messages=[{"role": "user", "content": prompt}],
     )
-
-    # 提取生成的文本内容
     generated_code = response.choices[0].message.content
-    
-    # 5. 处理保存路径与写入文件
-    output_folder = Path(args.output_dir)
-    # 如果输出文件夹不存在，则自动创建 (包括父目录)
-    output_folder.mkdir(parents=True, exist_ok=True)
-    
-    # 构建最终的输出文件路径
-    output_file_path = output_folder / f"{task_id}.py"
-    
-    # 将生成的代码写入该文件
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file_path = output_dir / f"{task_id}.py"
     with open(output_file_path, "w", encoding="utf-8") as f:
         f.write(generated_code)
 
-    print(f"\n✅ 生成完毕！代码已成功保存至: {output_file_path.resolve()}")
+    print(f"Saved generated evaluation script to {output_file_path.resolve()}")
+
 
 if __name__ == "__main__":
     main()

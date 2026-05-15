@@ -4,8 +4,8 @@ from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel, Field
 
-from mind2web2.evaluator import Evaluator, AggregationStrategy
-from mind2web2.utils.cache_filesys import CacheFileSys
+from cap_eval.evaluator import Evaluator, AggregationStrategy
+from cap_eval.utils.cache_filesys import CacheFileSys
 
 # --------------------------------------------------------------------------- #
 # Task-specific constants                                                     #

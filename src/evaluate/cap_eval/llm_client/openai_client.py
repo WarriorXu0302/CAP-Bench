@@ -120,13 +120,13 @@ async def acompletion_with_backoff(client: AsyncOpenAI, **kwargs):
 
 
 class OpenAIClient:
-    def __init__(self) -> None:
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    def __init__(self, api_key: str = None, base_url: str = None) -> None:
+        self.client = OpenAI(
+            api_key=api_key or os.getenv("OPENAI_API_KEY"),
+            base_url=base_url or os.getenv("OPENAI_BASE_URL"),
+        )
 
     def response(self, count_token: bool = False, **kwargs):
-        # <--- 新增改动: 强制覆盖所有同步调用的模型名称
-        kwargs['model'] = 'gpt-4o-mini'
-
         response = completion_with_backoff(self.client, **kwargs)
         tokens = {
             "input_tokens": response.usage.prompt_tokens,
@@ -143,18 +143,12 @@ class OpenAIClient:
 
 class AsyncOpenAIClient:
     def __init__(self, api_key: str = None, base_url: str = None) -> None:
-        resolved_api_key = "<REMOVED_SECRET>"
-        resolved_base_url = "https://litellm.fellou.ai"
+        resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
+        resolved_base_url = base_url or os.getenv("OPENAI_BASE_URL")
         aclient = AsyncOpenAI(api_key=resolved_api_key, base_url=resolved_base_url)
         self.client = instructor.patch(aclient)
 
     async def response(self, count_token: bool = False, **kwargs):
-        """
-        Final, corrected version of the async wrapper.
-        """
-        # (如果您想继续使用 claude，请保留这行；如果想换 gpt-4o，请修改它)
-        kwargs['model'] = 'openai/gpt-5' 
-        
         response = await acompletion_with_backoff(self.client, **kwargs)
 
         # 关键修正：不再使用 isinstance，而是检查调用意图
