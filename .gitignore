@@ -105,8 +105,9 @@ runs/
 *.jsonl
 wandb/
 
-# Ignore assets
-assets/
+# Ignore assets (datasets, site cards), but keep README figures
+assets/*
+!assets/figures/
 *_dataset_progress.json
 
 # Claude Code local context
