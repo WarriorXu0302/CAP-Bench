@@ -108,3 +108,6 @@ wandb/
 # Ignore assets
 assets/
 *_dataset_progress.json
+
+# Claude Code local context (top-level only; nested CLAUDE.md docs are kept)
+/CLAUDE.md
