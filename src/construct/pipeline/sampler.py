@@ -57,15 +57,15 @@ class Sampler:
 
         user_prompt = (
             prompt_template
-            + "\n\n## 输入材料\n\n```json\n"
+            + "\n\n## Input Materials\n\n```json\n"
             + json.dumps(sampling_input, ensure_ascii=False, indent=2)
             + "\n```"
         )
-        logger.debug(f"智能采样阶段提示词（输入部分）: {sampling_input}")
+        logger.debug(f"Intelligent sampling stage prompt (input section): {sampling_input}")
 
         llm = LLMService()
         response = llm.chat(
-            system_prompt="你是AI浏览器Benchmark的采样规划师。",
+            system_prompt="You are a sampling planner for AI Browser Benchmark.",
             user_prompt=user_prompt,
         )
 

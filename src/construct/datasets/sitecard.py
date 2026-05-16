@@ -7,17 +7,18 @@ from construct.module_configs import ASSETS_DIR
 
 
 class SiteCardDataset:
-    """SiteCard 数据集
+    """SiteCard Dataset for website functionality annotation.
 
-    提供网站功能点、操作项和感知项的加载与查询功能。
+    Provides loading and querying capabilities for website functional points,
+    action items, and perception items.
 
     Attributes:
-        data_root_path: 数据根目录路径
+        data_root_path: Root directory path for the dataset.
 
-    核心功能:
-        1. get_clusters() - 获取所有功能集团
-        2. get_cluster_functions(clusters) - 获取指定集团的功能点清单
-        3. get_function_details(ids) - 获取功能点详细的操作项和感知项
+    Core Functionality:
+        1. get_clusters() - Retrieve all functional clusters.
+        2. get_cluster_functions(clusters) - Get function inventory for specified clusters.
+        3. get_function_details(ids) - Retrieve detailed action and perception items for functions.
     """
 
     _ASSETS_PATH = ASSETS_DIR
@@ -25,40 +26,40 @@ class SiteCardDataset:
     _ENCODING = "utf-8"
 
     def __init__(self, data_root_path: Optional[str] = None) -> None:
-        """初始化数据集
+        """Initialize the dataset.
 
         Args:
-            data_root_path: 数据根目录路径，默认为 assets/sitecard
+            data_root_path: Root directory path for data, defaults to assets/sitecard.
 
         Raises:
-            FileNotFoundError: 当数据目录不存在时抛出
+            FileNotFoundError: Raised when the data directory does not exist.
         """
         self.data_root_path = Path(data_root_path) if data_root_path else self._DATA_ROOT_PATH
 
-        # 数据存储
+        # Data storage
         self._functions: Dict[str, Dict] = {}
         self._actions: Dict[str, List[Dict]] = defaultdict(list)
         self._perceptions: Dict[str, List[Dict]] = defaultdict(list)
 
-        # 索引结构
+        # Index structures
         self._clusters: Set[str] = set()
         self._cluster_sites: Dict[str, Set[str]] = defaultdict(set)
 
         self._load_data()
 
-    # ==================== 数据加载 ====================
+    # ==================== Data Loading ====================
 
     def _load_data(self) -> None:
-        """加载所有数据并构建索引
+        """Load all data and build indices.
 
-        遍历数据目录，加载所有功能点、操作项和感知项数据，
-        同时构建集团-网站的索引结构。
+        Traverses the data directory to load all functional points, action items,
+        and perception items, while constructing cluster-website index structures.
 
         Raises:
-            FileNotFoundError: 当数据目录不存在时抛出
+            FileNotFoundError: Raised when the data directory does not exist.
         """
         if not self.data_root_path.exists():
-            raise FileNotFoundError(f"数据目录不存在: {self.data_root_path}")
+            raise FileNotFoundError(f"Data directory does not exist: {self.data_root_path}")
 
         for site_dir in self.data_root_path.rglob("*"):
             if not site_dir.is_dir():
@@ -70,11 +71,11 @@ class SiteCardDataset:
 
             category, site_name = rel_parts[0], "/".join(rel_parts[1:])
 
-            # 更新索引
+            # Update indices
             self._clusters.add(category)
             self._cluster_sites[category].add(site_name)
 
-            # 加载CSV文件
+            # Load CSV files
             if (f := site_dir / "functions.csv").exists():
                 self._load_functions(f, category, site_name)
             if (f := site_dir / "action_items.csv").exists():
@@ -83,14 +84,14 @@ class SiteCardDataset:
                 self._load_items(f, site_name, self._perceptions, self._parse_perception)
 
     def _load_functions(self, path: Path, category: str, site_name: str) -> None:
-        """加载功能点CSV文件
+        """Load functional points from CSV file.
 
         Args:
-            path: CSV文件路径
-            category: 功能集团名称
-            site_name: 网站名称
+            path: Path to the CSV file.
+            category: Name of the functional cluster.
+            site_name: Name of the website.
         """
-        # 尝试多种编码格式
+        # Try multiple encoding formats
         encodings = [self._ENCODING, 'gbk', 'gb2312', 'latin1']
         
         for encoding in encodings:
@@ -106,16 +107,16 @@ class SiteCardDataset:
                             'label': row['label'],
                             'description': row['description']
                         }
-                # 成功读取后跳出循环
+                # Break loop after successful reading
                 break
             except UnicodeDecodeError:
-                # 如果不是最后一种编码，继续尝试下一种
+                # Continue trying next encoding if not the last one
                 if encoding == encodings[-1]:
-                    # 如果所有编码都尝试失败，则抛出异常
-                    raise RuntimeError(f"无法使用常见编码读取文件 {path}")
+                    # Raise exception if all encodings fail
+                    raise RuntimeError(f"Cannot read file {path} with common encodings")
                 continue
             except Exception as e:
-                raise Exception(f"读取文件 {path} 时出错: {e}") from e
+                raise Exception(f"Error reading file {path}: {e}") from e
 
     def _load_items(
             self,
@@ -124,15 +125,15 @@ class SiteCardDataset:
             storage: Dict[str, List[Dict]],
             parser: Callable[[Dict], Dict]
     ) -> None:
-        """加载操作项或感知项CSV文件
+        """Load action or perception items from CSV file.
 
         Args:
-            path: CSV文件路径
-            site_name: 网站名称
-            storage: 存储字典（_actions 或 _perceptions）
-            parser: 行解析函数
+            path: Path to the CSV file.
+            site_name: Name of the website.
+            storage: Storage dictionary (_actions or _perceptions).
+            parser: Row parsing function.
         """
-        # 尝试多种编码格式
+        # Try multiple encoding formats
         encodings = [self._ENCODING, 'gbk', 'gb2312', 'latin1']
         
         for encoding in encodings:
@@ -142,25 +143,25 @@ class SiteCardDataset:
                         for fid in row.get('对应功能点', '').split('|'):
                             if fid:
                                 storage[f"{site_name}:{fid}"].append(parser(row))
-                # 成功读取后跳出循环
+                # Break loop after successful reading
                 break
             except UnicodeDecodeError:
-                # 如果不是最后一种编码，继续尝试下一种
+                # Continue trying next encoding if not the last one
                 if encoding == encodings[-1]:
-                    # 如果所有编码都尝试失败，则抛出异常
-                    raise RuntimeError(f"无法使用常见编码读取文件 {path}")
+                    # Raise exception if all encodings fail
+                    raise RuntimeError(f"Cannot read file {path} with common encodings")
                 continue
             except Exception as e:
-                raise Exception(f"读取文件 {path} 时出错: {e}") from e
+                raise Exception(f"Error reading file {path}: {e}") from e
 
     def _parse_action(self, row: Dict) -> Dict:
-        """解析操作项行数据
+        """Parse action item row data.
 
         Args:
-            row: CSV行字典
+            row: CSV row dictionary.
 
         Returns:
-            解析后的操作项字典
+            Parsed action item dictionary.
         """
         return {
             'id': row['id'],
@@ -173,13 +174,13 @@ class SiteCardDataset:
         }
 
     def _parse_perception(self, row: Dict) -> Dict:
-        """解析感知项行数据
+        """Parse perception item row data.
 
         Args:
-            row: CSV行字典
+            row: CSV row dictionary.
 
         Returns:
-            解析后的感知项字典
+            Parsed perception item dictionary.
         """
         return {
             'id': row['id'],
@@ -191,13 +192,13 @@ class SiteCardDataset:
             'role': row['在功能点中的作用']
         }
 
-    # ==================== 集团查询接口 ====================
+    # ==================== Cluster Query Interface ====================
 
     def get_clusters(self) -> List[str]:
-        """获取所有功能集团列表
+        """Get list of all functional clusters.
 
         Returns:
-            集团名称列表，按字母序排列
+            List of cluster names, sorted alphabetically.
 
         Example:
             >>> dataset.get_clusters()
@@ -206,13 +207,13 @@ class SiteCardDataset:
         return sorted(self._clusters)
 
     def get_websites_by_cluster(self, cluster: str) -> List[str]:
-        """获取指定集团下的网站列表
+        """Get list of websites under a specified cluster.
 
         Args:
-            cluster: 集团名称
+            cluster: Name of the cluster.
 
         Returns:
-            网站名称列表，按字母序排列
+            List of website names, sorted alphabetically.
 
         Example:
             >>> dataset.get_websites_by_cluster("Code Hosting")
@@ -224,13 +225,13 @@ class SiteCardDataset:
             self,
             clusters: List[str]
     ) -> Dict[str, Dict[str, Dict[str, str]]]:
-        """获取指定集团的功能点清单（紧凑格式，供LLM选择）
+        """Get functional point inventory for specified clusters (compact format for LLM selection).
 
         Args:
-            clusters: 集团名称列表
+            clusters: List of cluster names.
 
         Returns:
-            三层嵌套字典: {cluster: {site: {global_id: "label(description)"}}}
+            Three-level nested dictionary: {cluster: {site: {global_id: "label(description)"}}}
 
         Example:
             >>> dataset.get_cluster_functions(["Code Hosting"])
@@ -248,16 +249,16 @@ class SiteCardDataset:
                 result[func['category']][func['site']][gid] = f"{func['label']}({func['description']})"
         return {k: dict(v) for k, v in result.items()}
 
-    # ==================== 功能点详情接口 ====================
+    # ==================== Function Details Interface ====================
 
     def get_function_details(self, function_ids: List[str]) -> Dict:
-        """根据功能点ID列表获取详细信息（含操作项和感知项）
+        """Get detailed information for function IDs (including action and perception items).
 
         Args:
-            function_ids: 功能点全局ID列表，如 ["github.com:F1", "arxiv.org:F2"]
+            function_ids: List of function global IDs, e.g., ["github.com:F1", "arxiv.org:F2"].
 
         Returns:
-            功能点详情字典:
+            Function details dictionary:
             {
                 global_id: {
                     function: "label(description)",
@@ -297,35 +298,36 @@ class SiteCardDataset:
         return result
 
     def get_compact_hierarchical_functions(self) -> Dict:
-        """获取所有功能点的紧凑型层级列表
+        """Get compact hierarchical list of all functional points.
 
         Returns:
-            三层嵌套字典: {category: {site: {global_id: "label(description)"}}}
+            Three-level nested dictionary: {category: {site: {global_id: "label(description)"}}}
         """
         return self.get_cluster_functions(list(self._clusters))
 
-    # ==================== 基本方法 ====================
+    # ==================== Basic Methods ====================
 
     def __len__(self) -> int:
-        """返回功能点总数"""
+        """Return total number of functional points."""
         return len(self._functions)
 
     def __repr__(self) -> str:
-        """返回数据集的字符串表示"""
-        # 计算所有网站的数量
+        """Return string representation of the dataset."""
+        # Calculate total number of websites
         total_sites = sum(len(sites) for sites in self._cluster_sites.values())
         return f"SiteCardDataset(clusters={len(self._clusters)}, sites={total_sites}, functions={len(self)})"
 
 
 if __name__ == '__main__':
-    """SiteCard 数据集加载器
+    """SiteCard Dataset Loader
 
-    加载网站功能点、操作项和感知项数据，支持层级浏览和功能点详情查询。
+    Loads website functional points, action items, and perception items data,
+    supporting hierarchical browsing and function detail queries.
 
-    数据结构:
+    Data Structure:
         sitecard/
-        └── {category}/          # 功能集团目录
-            └── {site}/          # 网站目录
+        └── {category}/          # Functional cluster directory
+            └── {site}/          # Website directory
                 ├── functions.csv
                 ├── action_items.csv
                 └── perception_items.csv

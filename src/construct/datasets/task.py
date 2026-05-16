@@ -1,17 +1,17 @@
-"""任务数据集
+"""Task Dataset
 
-管理proposals和tasks的读写，提供历史统计信息供采样器使用。
+Manages reading and writing of proposals and tasks, providing historical statistics for samplers.
 
-数据结构:
+Data Structure:
     output/
-    ├── proposals/           # 任务提案
+    ├── proposals/           # Task proposals
     │   └── prop-{uuid}.json
-    └── tasks/              # 最终任务
+    └── tasks/              # Final tasks
         └── task-{uuid}.json
 
 Example:
     >>> dataset = TaskDataset()
-    >>> dataset.save_proposal({"title": "测试任务"})
+    >>> dataset.save_proposal({"title": "Test Task"})
     'prop-a1b2c3'
     >>> dataset.get_cluster_usage()
     {'Code Hosting': 5, 'E-commerce': 3}
@@ -27,20 +27,20 @@ from construct.module_configs import OUTPUT_DIR
 
 
 class TaskDataset:
-    """任务数据集
+    """Task Dataset
     
-    管理两类数据:
-        - proposals: 任务提案 (output/proposals/prop-{uuid}.json)
-        - tasks: 最终任务 (output/tasks/task-{uuid}.json)
+    Manages two types of data:
+        - proposals: Task proposals (output/proposals/prop-{uuid}.json)
+        - tasks: Final tasks (output/tasks/task-{uuid}.json)
     
     Attributes:
-        proposals_path: 提案存储目录
-        tasks_path: 任务存储目录
+        proposals_path: Proposal storage directory
+        tasks_path: Task storage directory
     
-    核心功能:
-        1. save_proposal/get_proposal - 提案读写
-        2. save_task/get_task - 任务读写  
-        3. get_cluster_usage/get_combination_usage - 历史统计（供采样器使用）
+    Core Functionality:
+        1. save_proposal/get_proposal - Proposal read/write operations
+        2. save_task/get_task - Task read/write operations  
+        3. get_cluster_usage/get_combination_usage - Historical statistics (for sampler use)
     """
 
     _OUTPUT_PATH = OUTPUT_DIR
@@ -54,40 +54,40 @@ class TaskDataset:
         proposals_path: Optional[str] = None,
         tasks_path: Optional[str] = None
     ) -> None:
-        """初始化任务数据集
+        """Initialize the task dataset.
         
         Args:
-            proposals_path: 提案目录路径，默认 output/proposals
-            tasks_path: 任务目录路径，默认 output/tasks
+            proposals_path: Proposal directory path, defaults to output/proposals
+            tasks_path: Task directory path, defaults to output/tasks
         """
         self.proposals_path = Path(proposals_path) if proposals_path else self._PROPOSALS_PATH
         self.tasks_path = Path(tasks_path) if tasks_path else self._TASKS_PATH
         
-        # 缓存
+        # Cache
         self._proposals: Dict[str, Dict] = {}
         self._tasks: Dict[str, Dict] = {}
         self._loaded = False
 
-    # ==================== 数据加载 ====================
+    # ==================== Data Loading ====================
 
     def _ensure_loaded(self) -> None:
-        """确保数据已加载（懒加载机制）
+        """Ensure data is loaded (lazy loading mechanism).
         
-        首次访问数据时自动触发加载，后续访问使用缓存。
+        Automatically triggers loading on first data access, uses cache for subsequent accesses.
         """
         if not self._loaded:
             self.load_all()
 
     def load_all(self) -> None:
-        """加载所有proposals和tasks到内存
+        """Load all proposals and tasks into memory.
         
-        扫描proposals和tasks目录，加载所有JSON文件。
-        加载失败的文件会被静默跳过。
+        Scans proposals and tasks directories, loads all JSON files.
+        Files that fail to load are silently skipped.
         """
         self._proposals.clear()
         self._tasks.clear()
         
-        # 加载proposals
+        # Load proposals
         if self.proposals_path.exists():
             for f in self.proposals_path.glob("prop-*.json"):
                 try:
@@ -96,7 +96,7 @@ class TaskDataset:
                 except (json.JSONDecodeError, IOError):
                     pass
         
-        # 加载tasks
+        # Load tasks
         if self.tasks_path.exists():
             for f in self.tasks_path.glob("task-*.json"):
                 try:
@@ -107,19 +107,19 @@ class TaskDataset:
         
         self._loaded = True
 
-    # ==================== Proposal操作 ====================
+    # ==================== Proposal Operations ====================
 
     def save_proposal(self, proposal: Dict[str, Any]) -> str:
-        """保存proposal到文件
+        """Save proposal to file.
         
         Args:
-            proposal: 提案字典，若无proposal_id则自动生成
+            proposal: Proposal dictionary, generates proposal_id automatically if not present
             
         Returns:
-            proposal_id，格式为 "prop-{6位uuid}"
+            proposal_id, format is "prop-{6-digit uuid}"
             
         Example:
-            >>> dataset.save_proposal({"title": "社区推荐验证"})
+            >>> dataset.save_proposal({"title": "Community Recommendation Verification"})
             'prop-a1b2c3'
         """
         proposal_id = proposal.get("proposal_id") or f"prop-{uuid4().hex[:6]}"
@@ -136,39 +136,39 @@ class TaskDataset:
         return proposal_id
 
     def get_proposal(self, proposal_id: str) -> Optional[Dict]:
-        """获取指定proposal
+        """Get specified proposal.
         
         Args:
-            proposal_id: 提案ID
+            proposal_id: Proposal ID
             
         Returns:
-            提案字典，不存在则返回None
+            Proposal dictionary, returns None if not exists
         """
         self._ensure_loaded()
         return self._proposals.get(proposal_id)
 
     def list_proposals(self) -> List[str]:
-        """列出所有proposal_id
+        """List all proposal_ids.
         
         Returns:
-            proposal_id列表
+            List of proposal_ids
         """
         self._ensure_loaded()
         return list(self._proposals.keys())
 
-    # ==================== Task操作 ====================
+    # ==================== Task Operations ====================
 
     def save_task(self, task: Dict[str, Any]) -> str:
-        """保存task到文件
+        """Save task to file.
         
         Args:
-            task: 任务字典，必须包含task_id字段
+            task: Task dictionary, must contain task_id field
             
         Returns:
             task_id
             
         Raises:
-            ValueError: 当task缺少task_id字段时抛出
+            ValueError: Raised when task lacks task_id field
             
         Example:
             >>> dataset.save_task({"task_id": "task-a1b2c3", "description": "..."})
@@ -176,7 +176,7 @@ class TaskDataset:
         """
         task_id = task.get("task_id")
         if not task_id:
-            raise ValueError("task必须包含task_id字段")
+            raise ValueError("Task must contain task_id field")
         
         self.tasks_path.mkdir(parents=True, exist_ok=True)
         path = self.tasks_path / f"{task_id}.json"
@@ -189,30 +189,30 @@ class TaskDataset:
         return task_id
 
     def get_task(self, task_id: str) -> Optional[Dict]:
-        """获取指定task
+        """Get specified task.
         
         Args:
-            task_id: 任务ID
+            task_id: Task ID
             
         Returns:
-            任务字典，不存在则返回None
+            Task dictionary, returns None if not exists
         """
         self._ensure_loaded()
         return self._tasks.get(task_id)
 
     def list_tasks(self) -> List[str]:
-        """列出所有task_id
+        """List all task_ids.
         
         Returns:
-            task_id列表
+            List of task_ids
         """
         self._ensure_loaded()
         return list(self._tasks.keys())
 
-    # ==================== 移动到回收站操作 ====================
+    # ==================== Move to Trash Operations ====================
 
     def move_proposal_to_trash(self, proposal_id: str) -> bool:
-        """将proposal移动到回收站"""
+        """Move proposal to trash."""
         source = self.proposals_path / f"{proposal_id}.json"
         if not source.exists():
             return False
@@ -229,7 +229,7 @@ class TaskDataset:
         return True
 
     def move_task_to_trash(self, task_id: str) -> bool:
-        """将task移动到回收站"""
+        """Move task to trash."""
         source = self.tasks_path / f"{task_id}.json"
         if not source.exists():
             return False
@@ -245,15 +245,15 @@ class TaskDataset:
         self._tasks.pop(task_id, None)
         return True
 
-    # ==================== 统计接口（供Sampler使用）====================
+    # ==================== Statistics Interface (for Sampler use) ====================
 
     def get_cluster_usage(self) -> Dict[str, int]:
-        """统计各集团使用次数
+        """Count usage frequency of each cluster.
         
-        遍历所有已完成任务，统计每个集团被使用的次数。
+        Iterates through all completed tasks and counts how many times each cluster is used.
         
         Returns:
-            字典: {cluster_name: usage_count}
+            Dictionary: {cluster_name: usage_count}
             
         Example:
             >>> dataset.get_cluster_usage()
@@ -267,12 +267,12 @@ class TaskDataset:
         return dict(usage)
 
     def get_website_usage(self) -> Dict[str, int]:
-        """统计各网站使用次数
+        """Count usage frequency of each website.
         
-        遍历所有已完成任务，统计每个网站被使用的次数。
+        Iterates through all completed tasks and counts how many times each website is used.
         
         Returns:
-            字典: {website_name: usage_count}
+            Dictionary: {website_name: usage_count}
             
         Example:
             >>> dataset.get_website_usage()
@@ -286,19 +286,19 @@ class TaskDataset:
         return dict(usage)
 
     def get_combination_usage(self, anchor_cluster: str) -> Dict:
-        """获取指定锚定集团的组合使用频率
+        """Get combination usage frequency for specified anchor cluster.
         
-        统计以指定集团为锚定时，与其他集团的组合使用情况。
+        Counts how often the specified cluster is combined with other clusters.
         
         Args:
-            anchor_cluster: 锚定集团名称
+            anchor_cluster: Name of the anchor cluster
             
         Returns:
-            组合使用频率字典:
+            Combination usage frequency dictionary:
             {
-                "order_0": int,  # 锚定集团单独使用次数
-                "order_1": {other_cluster: count},  # 锚定+1个其他集团
-                "order_2": {"cluster1 + cluster2": count}  # 锚定+2个其他集团
+                "order_0": int,  # Number of times anchor cluster used alone
+                "order_1": {other_cluster: count},  # Anchor + 1 other cluster
+                "order_2": {"cluster1 + cluster2": count}  # Anchor + 2 other clusters
             }
             
         Example:
@@ -327,7 +327,7 @@ class TaskDataset:
             elif len(others) == 1:
                 order_1[others[0]] += 1
             elif len(others) >= 2:
-                # 取前两个组成pair，按字母序连接
+                # Take first two to form pair, connect in alphabetical order
                 key = f"{others[0]} + {others[1]}"
                 order_2[key] += 1
         
@@ -338,16 +338,16 @@ class TaskDataset:
         }
 
     def get_points_usage_stats(self) -> Dict[str, int]:
-        """统计各类points的去重计数
+        """Count unique occurrences of various point types.
         
-        遍历所有已完成任务，统计function_points_used、action_points_used、
-        perception_points_used中各个点的去重计数。
+        Iterates through all completed tasks and counts unique occurrences
+        of points in function_points_used, action_points_used, and perception_points_used.
         
         Returns:
-            字典: {
-                "unique_function_points": int,  # function_points_used去重计数
-                "unique_action_points": int,    # action_points_used去重计数
-                "unique_perception_points": int # perception_points_used去重计数
+            Dictionary: {
+                "unique_function_points": int,  # Unique count of function_points_used
+                "unique_action_points": int,    # Unique count of action_points_used
+                "unique_perception_points": int # Unique count of perception_points_used
             }
         """
         self._ensure_loaded()
@@ -372,15 +372,15 @@ class TaskDataset:
             "unique_perception_points": len(perception_points_set)
         }
 
-    # ==================== 基本方法 ====================
+    # ==================== Basic Methods ====================
 
     def __len__(self) -> int:
-        """返回任务总数"""
+        """Return total number of tasks."""
         self._ensure_loaded()
         return len(self._tasks)
 
     def __repr__(self) -> str:
-        """返回数据集的字符串表示"""
+        """Return string representation of the dataset."""
         self._ensure_loaded()
         return f"TaskDataset(proposals={len(self._proposals)}, tasks={len(self._tasks)})"
 
@@ -388,7 +388,7 @@ class TaskDataset:
 if __name__ == '__main__':
     dataset = TaskDataset()
     stats = dataset.get_points_usage_stats()
-    print("各类型points的去重计数:")
-    print(f"function_points_used 去重种类数: {stats['unique_function_points']}")
-    print(f"action_points_used 去重种类数: {stats['unique_action_points']}")
-    print(f"perception_points_used 去重种类数: {stats['unique_perception_points']}")
+    print("Unique counts for each point type:")
+    print(f"Unique function_points_used: {stats['unique_function_points']}")
+    print(f"Unique action_points_used: {stats['unique_action_points']}")
+    print(f"Unique perception_points_used: {stats['unique_perception_points']}")

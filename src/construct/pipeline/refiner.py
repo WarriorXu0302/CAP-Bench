@@ -18,7 +18,7 @@ class Refiner:
     def run(self, proposal_id: str) -> str:
         proposal = self._tasks.get_proposal(proposal_id)
         if proposal is None:
-            raise FileNotFoundError(f"提案不存在: {proposal_id}")
+            raise FileNotFoundError(f"Proposal does not exist: {proposal_id}")
 
         function_points = proposal.get("metadata", {}).get("function_points", [])
         action_perception = self._sitecard.get_function_details(function_points)
@@ -27,26 +27,26 @@ class Refiner:
         prompt_template = prompt_path.read_text(encoding="utf-8")
 
         input_section = f"""
-        ## 输入材料
+        ## Input Materials
 
-        ### 任务提案
+        ### Task Proposal
 
         ```json
         {json.dumps(proposal, ensure_ascii=False, indent=2)}
         ```
 
-        ### 操作感知项列表
+        ### Action and Perception Items List
 
         ```json
         {json.dumps(action_perception, ensure_ascii=False, indent=2)}
         ```
         """
         user_prompt = prompt_template + input_section
-        logger.debug(f"任务完善阶段提示词（输入部分）: {input_section}")
+        logger.debug(f"Task refinement stage prompt (input section): {input_section}")
 
         llm = LLMService()
         response = llm.chat(
-            system_prompt="你是AI浏览器Benchmark的任务完善者。",
+            system_prompt="You are a task refiner for AI Browser Benchmark.",
             user_prompt=user_prompt,
         )
 

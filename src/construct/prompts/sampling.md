@@ -1,207 +1,224 @@
-# 智能采样指南
+# Intelligent Cluster Sampling Guide
 
-请基于输入的锚定集团和组合使用频率，分析并选择3-6个有潜力产生有价值任务组合的功能集团。
+Based on the input anchor cluster and combination usage frequency, analyze and select 3-6 functional clusters with potential to generate valuable task combinations.
 
-**核心目标**：
+**Core objectives**:
 
-1. 充分分析锚定集团与所有其他集团的相性关系
-2. 在相性可行的组合中，优先选择使用频率较低的组合
-3. 最终输出4-10个功能集团（含锚定集团）
+1. Thoroughly analyze affinity relationships between anchor cluster and all other clusters
+2. Among feasible affinity combinations, prioritize those with lower usage frequency
+3. Output 4-10 functional clusters (including anchor cluster)
 
-**复杂度导向**：
-- 优先选择**6-10个**功能集团（提高下限）
-- 鼓励选择同一集团内有**多个可用网站**的集团（支撑集团内并行/对比）
-- 考虑能形成**3步以上信息链**的集团组合（提高上限）
+**Complexity orientation**:
+- Prioritize selecting **6-10** functional clusters (raise the floor)
+- Encourage selecting clusters with **multiple available websites** within the same cluster (support intra-cluster parallel/comparison)
+- Consider cluster combinations that can form **information chains of 3+ steps** (raise the ceiling)
 
-## 输入字段说明
+---
 
-| 字段                      | 说明                                                         |
-| ------------------------- | ------------------------------------------------------------ |
-| anchor_cluster            | 锚定集团名称                                                 |
-| combination_usage.order_0 | 锚定集团单独使用的次数                                       |
-| combination_usage.order_1 | 锚定集团+1个其他集团的组合次数                               |
-| combination_usage.order_2 | 锚定集团+2个其他集团的组合次数（key用" + "连接，字母序排列） |
-| function_clusters         | 所有功能集团及其网站使用次数                                 |
+# Full Cluster Sampling Guide (Extended)
 
-## 思考过程
+## Input Field Descriptions
 
-**重要**：先做相性分析（不考虑频率），再结合频率选择。
+| Field | Description |
+|-------|-------------|
+| anchor_cluster | Anchor cluster name |
+| combination_usage.order_0 | Number of times anchor cluster used alone |
+| combination_usage.order_1 | Number of times anchor cluster + 1 other cluster combined |
+| combination_usage.order_2 | Number of times anchor cluster + 2 other clusters combined (keys connected with " + ", alphabetically sorted) |
+| function_clusters | All functional clusters and their website usage counts |
 
-### 第一步：相性分析
+## Thought Process
 
-分析锚定集团与其他集团的结合可能性：
+**Important**: First conduct affinity analysis (without considering frequency), then combine with frequency for selection.
 
-- **自环（order_0）**：锚定集团内部的跨网站组合
-- **一阶（order_1）**：锚定集团 + 1个其他集团
-- **二阶（order_2）**：锚定集团 + 2个其他集团（三者结合）
+### Step 1: Affinity Analysis
 
-**分析要求**：
+**Functional Affinity Assessment**: This step assesses pairwise cluster compatibility to evaluate whether they can form coherent cross-site workflows. For each cluster pair, evaluate the plausibility of information flow scenarios:
 
-- **不要只看功能集团的名字**，要结合集团中的**具体网站**去思考
-- **发挥想象力**：每个关系尽量列出**至少3条**不同的结合方式
-- 每条标注可能度（高/中/低）
-- 实在想不到3条的，尽力列出1-2条，完全无法结合才填"无"
-- **此阶段不考虑组合使用频率**，纯粹从相性角度分析
+- Can information from cluster A naturally serve as input for tasks in cluster B?
+- Can information from cluster B naturally serve as input for tasks in cluster A?
+- Do real user workflows commonly involve both clusters?
 
-**集团内部分析**：
-除了跨集团相性，还需分析每个集团**内部多网站协作**的可能性：
-- 同类平台对比（如Amazon vs eBay比价）
-- 多源信息聚合（如多个学术库交叉检索）
-- 互补功能组合（如GitHub代码 + HuggingFace模型）
+**Rating Scale** (aligned with affinity matrix M):
+- **HIGH**: Frequent real-world workflows connect these clusters  
+  Example: Academic Search + Code Hosting (researchers find papers then locate implementations)
+- **MEDIUM**: Plausible but less common workflows exist
+- **LOW**: No natural information flow  
+  Example: Real Estate + Code Hosting (no coherent user scenario)
 
-示例：【集团内部】E-commerce
-多平台比价(高)：Amazon/eBay/Walmart同商品价格对比
-跨平台库存确认(高)：A平台缺货时查B平台
+Analyze the compatibility between anchor cluster and other clusters:
 
-**可能度评估标准**：
+- **Self-loop (order_0)**: Cross-website combinations within anchor cluster
+- **First-order (order_1)**: Anchor cluster + 1 other cluster
+- **Second-order (order_2)**: Anchor cluster + 2 other clusters (three-way combination)
 
-| 等级 | 标准                                                     |
-| ---- | -------------------------------------------------------- |
-| 高   | 符合常见用户需求、信息流逻辑自然、网站功能直接支撑       |
-| 中   | 用户需求合理但非高频、信息流需要一定推理、网站功能可支撑 |
-| 低   | 用户需求较小众、信息流较牵强、网站功能勉强支撑           |
+**Analysis requirements**:
 
-**信息流方向参考**：
+- **Don't just look at functional cluster names**, consider the **specific websites** within each cluster
+- **Use imagination**: For each relationship, try to list **at least 3** different combination methods
+- Label each with plausibility (HIGH/MEDIUM/LOW)
+- If you can't think of 3, do your best to list 1-2; only fill "none" if truly no combination possible
+- **At this stage, do NOT consider combination usage frequency**, analyze purely from affinity perspective
 
-| 方向  | 说明                                 |
-| ----- | ------------------------------------ |
-| A→B   | A提供目标/需求，B提供解决方案/详情   |
-| B→A   | B提供候选，A验证/筛选                |
-| A↔B   | 两者提供同一事物的不同视角，互相验证 |
-| A+B→C | 多源聚合后统一处理                   |
-| A→B→C | 信息逐层加工传递                     |
+**Intra-cluster analysis**:
+Besides cross-cluster affinity, also analyze the possibility of **multi-website collaboration within each cluster**:
+- Similar platform comparison (e.g., Amazon vs eBay price comparison)
+- Multi-source information aggregation (e.g., cross-retrieval from multiple academic databases)
+- Complementary function combination (e.g., GitHub code + HuggingFace models)
 
-**模式类型参考**：
+Example: [Intra-cluster] E-commerce
+Multi-platform price comparison (HIGH): Compare same product prices across Amazon/eBay/Walmart
+Cross-platform inventory confirmation (HIGH): Check platform B when platform A is out of stock
 
-| 模式     | 图示         | 说明                      |
-| -------- | ------------ | ------------------------- |
-| 串行依赖 | A → B        | A的输出是B的必要输入      |
-| 逆向验证 | B ← A        | 先在B找候选，用A验证      |
-| 并行对比 | A ∥ B        | 同一目标在多平台对比      |
-| 发散展开 | A → (B₁, B₂) | 从A获取多个目标，分别处理 |
-| 多源聚合 | (A₁, A₂) → B | 多来源收集后统一处理      |
-| 链式传递 | A → B → C    | 信息逐层加工              |
-| 交叉验证 | A ↔ B        | 两个来源互相验证          |
+**Plausibility assessment criteria**:
 
-**第一步输出格式示例**：
+| Level | Criteria |
+|-------|----------|
+| HIGH | Aligns with common user needs, natural information flow logic, website functions directly support |
+| MEDIUM | User needs reasonable but not high-frequency, information flow requires some reasoning, website functions can support |
+| LOW | Niche user needs, somewhat forced information flow, website functions barely support |
 
-```
-【自环】Code Hosting × Code Hosting
-1. 跨平台项目对比(高)：GitHub/GitLab的star、活跃度对比
-2. 镜像仓库同步验证(高)：验证镜像是否与主仓库同步
-3. 模型托管对比(中)：Huggingface vs GitHub LFS
+**Information flow direction reference**:
 
-【一阶】Code Hosting × Academic Search
-1. 论文→代码实现(高)
-2. 热门项目→理论基础(高)
-3. 算法复现验证(中)
+| Direction | Description |
+|-----------|-------------|
+| A → B | A provides target/requirement, B provides solution/details |
+| B → A | B provides candidates, A verifies/filters |
+| A ↔ B | Both provide different perspectives on same thing, mutual verification |
+| A + B → C | Multi-source aggregation then unified processing |
+| A → B → C | Information progressively refined and transmitted |
 
-【二阶】Code Hosting × Academic Search × Social & Community
-1. 论文→代码→社区问答(高)：研究到实践到问题解决
-2. 社区热议论文→代码实现(中)
-```
+**Pattern type reference**:
 
-### 第二步：结合频率筛选
+| Pattern | Diagram | Description |
+|---------|---------|-------------|
+| Sequential dependency | A → B | A's output is necessary input for B |
+| Reverse verification | B ← A | First find candidates in B, verify with A |
+| Parallel comparison | A ∥ B | Same target compared across multiple platforms |
+| Fan-out expansion | A → (B₁, B₂) | Obtain multiple targets from A, process separately |
+| Multi-source aggregation | (A₁, A₂) → B | Collect from multiple sources then unify processing |
+| Chain transmission | A → B → C | Information progressively refined |
+| Cross-verification | A ↔ B | Two sources mutually verify |
 
-基于相性分析结果，结合`combination_usage`中的组合使用频率进行筛选。
-
-**筛选原则**：
-
-- 相性为"低"的组合，即使频率为0，也不优先考虑
-- 相性为"高/中"且频率为0或很低的，**优先考虑** ★
-- 相性为"高"且频率较高的，说明确实有价值，可以考虑
-- 同时关注网站使用频率，优先选择集团内有低频网站的
-
-**第二步输出格式示例**：
+**Step 1 output format example**:
 
 ```
-【相性+频率综合分析】
+[Self-loop] Code Hosting × Code Hosting
+1. Cross-platform project comparison (HIGH): Compare stars, activity across GitHub/GitLab
+2. Mirror repository sync verification (HIGH): Verify if mirror is synced with main repository
+3. Model hosting comparison (MEDIUM): Huggingface vs GitHub LFS
 
-order_1组合筛选：
-| 组合 | 相性 | 频率 | 结论 |
-|------|------|------|------|
-| + Academic Search | 高 | 5次 | 高价值但已饱和，次优先 |
-| + Video & Streaming | 中 | 0次 | 可行且未探索，优先 ★ |
+[First-order] Code Hosting × Academic Search
+1. Paper → code implementation (HIGH)
+2. Popular projects → theoretical foundation (HIGH)
+3. Algorithm reproduction verification (MEDIUM)
 
-order_2组合筛选：
-| 组合 | 相性 | 频率 | 结论 |
-|------|------|------|------|
-| + Academic Search + Video & Streaming | 中 | 0次 | 可行且未探索，优先 ★ |
-
-低频网站关注：
-- Video & Streaming: bilibili.com (0次) ★
-- E-commerce: ebay.com (0次) ★
+[Second-order] Code Hosting × Academic Search × Social & Community
+1. Paper → code → community Q&A (HIGH): Research to practice to problem-solving
+2. Community hot papers → code implementation (MEDIUM)
 ```
 
-### 第三步：确定选中集团
+### Step 2: Combine with Frequency for Filtering
 
-根据综合分析结果，选择3-6个功能集团。
+Based on affinity analysis results, combine with combination usage frequency from `combination_usage` for filtering.
 
-**选择优先级**：
+**Filtering principles**:
 
-1. **锚定集团必须包含**
-2. **优先选能构成"相性可行+低频"组合的集团**
-3. **兼顾order_1和order_2的覆盖**：order_2意味着可以构造更复杂的信息流
-4. **关注网站使用频率**：优先选择内部有低频网站的集团
+- Combinations with "LOW" affinity, even if frequency is 0, are not prioritized
+- Combinations with "HIGH/MEDIUM" affinity and frequency of 0 or very low, **prioritize** ★
+- Combinations with "HIGH" affinity and relatively high frequency indicate real value, can consider
+- Also pay attention to website usage frequency, prioritize clusters with low-frequency websites
 
-**第三步输出格式示例**：
+**Step 2 output format example**:
 
 ```
-【选中集团】
+[Affinity + Frequency Comprehensive Analysis]
+
+order_1 combination filtering:
+| Combination | Affinity | Frequency | Conclusion |
+|-------------|----------|-----------|------------|
+| + Academic Search | HIGH | 5 times | High value but saturated, secondary priority |
+| + Video & Streaming | MEDIUM | 0 times | Feasible and unexplored, priority ★ |
+
+order_2 combination filtering:
+| Combination | Affinity | Frequency | Conclusion |
+|-------------|----------|-----------|------------|
+| + Academic Search + Video & Streaming | MEDIUM | 0 times | Feasible and unexplored, priority ★ |
+
+Low-frequency website attention:
+- Video & Streaming: bilibili.com (0 times) ★
+- E-commerce: ebay.com (0 times) ★
+```
+
+### Step 3: Determine Selected Clusters
+
+Based on comprehensive analysis results, select 3-6 functional clusters.
+
+**Selection priority**:
+
+1. **Anchor cluster must be included**
+2. **Prioritize clusters that can form "feasible affinity + low frequency" combinations**
+3. **Balance order_1 and order_2 coverage**: order_2 means more complex information flows can be constructed
+4. **Pay attention to website usage frequency**: Prioritize clusters with low-frequency internal websites
+
+**Step 3 output format example**:
+
+```
+[Selected Clusters]
 Code Hosting, Video & Streaming, E-commerce, Academic Search
 
-选择理由：
-- Code Hosting：锚定集团，必选
-- Video & Streaming：相性中、order_1频率0次，优先探索；且有bilibili.com(0次)
-- E-commerce：相性中、order_1频率1次；与Video & Streaming可形成order_2的0次组合
-- Academic Search：相性高，虽然order_1已5次，但能参与构成order_2低频组合
+Selection rationale:
+- Code Hosting: Anchor cluster, mandatory
+- Video & Streaming: Medium affinity, order_1 frequency 0 times, priority exploration; also has bilibili.com (0 times)
+- E-commerce: Medium affinity, order_1 frequency 1 time; can form order_2 0-frequency combination with Video & Streaming
+- Academic Search: High affinity, although order_1 already 5 times, can participate in forming order_2 low-frequency combinations
 
-本次采样将探索的低频组合：
-- + Video & Streaming（order_1，0次）
-- + Academic Search + Video & Streaming（order_2，0次）
+Low-frequency combinations to explore this sampling:
+- + Video & Streaming (order_1, 0 times)
+- + Academic Search + Video & Streaming (order_2, 0 times)
 ```
 
-## 输出格式
+## Output Format
 
-完成上述思考后，请输出以下JSON：
+After completing the above thinking, please output the following JSON:
 
 ```json
 {
-  "anchor_cluster": "锚定集团名",
-  "selected_clusters": ["集团1", "集团2"],
+  "anchor_cluster": "Anchor cluster name",
+  "selected_clusters": ["Cluster1", "Cluster2"],
   "selected_websites": {
-    "集团1": {"网站A": 使用次数, "网站B": 使用次数},
-    "集团2": {"网站C": 使用次数}
+    "Cluster1": {"WebsiteA": usage_count, "WebsiteB": usage_count},
+    "Cluster2": {"WebsiteC": usage_count}
   }
 }
 ```
 
-**字段要求**：
+**Field requirements**:
 
-| 字段               | 要求                                                    |
-| ------------------ | ------------------------------------------------------- |
-| anchor_cluster     | 直接从输入复制                                          |
-| selected_clusters  | 3-6个，必须包含anchor_cluster                           |
-| selected_websites  | 选中集团的网站及使用次数，从输入的function_clusters提取 |
-| potential_patterns | 潜在模式列表，每条必须包含anchor_cluster                |
+| Field | Requirements |
+|-------|-------------|
+| anchor_cluster | Copy directly from input |
+| selected_clusters | 3-6 clusters, must include anchor_cluster |
+| selected_websites | Websites and usage counts of selected clusters, extracted from input function_clusters |
+| potential_patterns | List of potential patterns, each must include anchor_cluster |
 
-**potential_patterns要求**：
+**potential_patterns requirements**:
 
-- 格式：`[集团A, 集团B] 模式类型：简要描述`
-- 涉及集团数量：1个（order_0）、2个（order_1）、3个（order_2）
-- 描述应宏观，不要说死具体场景
-- 应覆盖order_0、order_1、order_2多种组合
-- **优先列出低频组合的模式**
+- Format: `[ClusterA, ClusterB] Pattern type: Brief description`
+- Number of clusters involved: 1 (order_0), 2 (order_1), 3 (order_2)
+- Descriptions should be macro-level, don't specify concrete scenarios too rigidly
+- Should cover order_0, order_1, order_2 multiple combinations
+- **Prioritize listing patterns for low-frequency combinations**
 
-**模式类型**：串行依赖、逆向验证、并行对比、发散展开、多源聚合、链式传递、交叉验证
+**Pattern types**: Sequential dependency, Reverse verification, Parallel comparison, Fan-out expansion, Multi-source aggregation, Chain transmission, Cross-verification
 
-## 自检清单
+## Self-Check Checklist
 
-- [ ] 相性分析完整：是否完成了自环、order_1、order_2的相性分析？
-- [ ] 想象力充分：每个关系是否列出了至少3条结合方式？
-- [ ] 频率筛选正确：是否在相性可行的基础上优先选择低频组合？
-- [ ] 数量合适：selected_clusters是否有3-6个？
-- [ ] 锚点包含：selected_clusters是否包含anchor_cluster？
-- [ ] 模式丰富：potential_patterns是否覆盖自环、order_1、order_2？
-- [ ] 低频优先：potential_patterns是否优先列出低频组合的模式？
-- [ ] 格式正确：输出是否为合法的JSON格式？
+- [ ] Affinity analysis complete: Did you complete affinity analysis for self-loop, order_1, order_2?
+- [ ] Sufficient imagination: Did you list at least 3 combination methods for each relationship?
+- [ ] Frequency filtering correct: Did you prioritize low-frequency combinations based on feasible affinity?
+- [ ] Appropriate quantity: Does selected_clusters have 3-6 items?
+- [ ] Anchor included: Does selected_clusters include anchor_cluster?
+- [ ] Rich patterns: Do potential_patterns cover self-loop, order_1, order_2?
+- [ ] Low-frequency priority: Do potential_patterns prioritize listing patterns for low-frequency combinations?
+- [ ] Correct format: Is the output valid JSON format?
