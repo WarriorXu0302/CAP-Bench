@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Leaderboard — CAP-Bench</title>
+<meta name="description" content="CAP-Bench leaderboard for cross-site browser agents." />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">CAP-Bench</a>
+    <ul>
+      <li><a href="index.html#abstract">Abstract</a></li>
+      <li><a href="index.html#construction">Construction</a></li>
+      <li><a href="index.html#evaluation">Evaluation</a></li>
+      <li><a href="index.html#findings">Findings</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+      <li><a href="index.html#cite">BibTeX</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero" style="padding:56px 0 32px;">
+  <div class="container">
+    <h1 style="font-size:2.2rem;">Leaderboard</h1>
+    <p class="subtitle">Browser agents evaluated on the public split (192 tasks).
+      Click any column header to sort.</p>
+    <p style="font-size:0.9rem; color:var(--muted); margin-top:6px;">
+      Last updated: <span id="lb-updated">—</span>
+    </p>
+    <div class="btn-row" style="margin-top:18px;">
+      <a class="btn" id="lb-submit" href="#">📨 Submit your results</a>
+      <a class="btn outline" href="index.html">← Back to overview</a>
+    </div>
+  </div>
+</header>
+
+<section style="padding-top:32px;">
+  <div class="container">
+    <div id="lb-full" class="lb-preview">Loading…</div>
+
+    <h2 style="margin-top:48px; font-size:1.25rem;">Metric definitions</h2>
+    <ul style="font-size:0.95rem; color:var(--muted);">
+      <li><strong>Partial Completion</strong> — mean root-node score across tasks (graded progress).</li>
+      <li><strong>Success Rate</strong> — fraction of tasks scoring 1.0 (end-to-end completion).</li>
+      <li><strong>Complex-A</strong> — mean leaf score over <em>action</em> nodes (UI execution complexity).</li>
+      <li><strong>Complex-P</strong> — mean leaf score over <em>perception</em> nodes (visual reasoning).</li>
+      <li><strong>Time</strong> / <strong>Output</strong> — average end-to-end wall-clock time and output length per task.</li>
+    </ul>
+
+    <h2 style="margin-top:36px; font-size:1.25rem;">How to submit</h2>
+    <p>
+      To add a new system to this leaderboard,
+      <a id="lb-submit-link" href="#">open a GitHub issue</a> with the
+      <code>leaderboard</code> label and include:
+    </p>
+    <ol>
+      <li>A short system description and the agent / model versions used.</li>
+      <li>The four CAP metrics (Partial Completion, Success Rate, Complex-A, Complex-P) with standard deviations.</li>
+      <li>Average wall-clock time and output length per task.</li>
+      <li>A link to your evaluation logs (preferred) or a brief description of the evaluation setup.</li>
+    </ol>
+    <p>We will review and merge submissions on a rolling basis.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="https://github.com/WarriorXu0302/CAP-Bench">GitHub</a> ·
+      <a href="https://huggingface.co/datasets/Warrior0302/CAP">Hugging Face</a> ·
+      Released under the <a href="https://github.com/WarriorXu0302/CAP-Bench/blob/main/LICENSE">Apache 2.0</a> license
+    </p>
+  </div>
+</footer>
+
+<script src="js/leaderboard.js"></script>
+<script>
+  renderFull("lb-full", "lb-updated", "lb-submit");
+  // mirror submit URL into the inline link too
+  fetch("data/leaderboard.json").then(r => r.json()).then(d => {
+    if (d.submission_url) document.getElementById("lb-submit-link").href = d.submission_url;
+  });
+</script>
+</body>
+</html>

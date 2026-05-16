@@ -1,0 +1,102 @@
+{
+  "metric_legend": {
+    "partial_completion": "Partial Completion — mean root-node score across tasks (graded progress).",
+    "success_rate": "Success Rate — fraction of tasks scoring 1.0 (end-to-end completion).",
+    "complex_a": "Complex-A — mean leaf score over action nodes (UI execution).",
+    "complex_p": "Complex-P — mean leaf score over perception nodes (visual reasoning).",
+    "time_min": "End-to-end time per task (minutes).",
+    "tokens_k": "Output length per task (×10³ tokens)."
+  },
+  "submission_url": "https://github.com/WarriorXu0302/CAP-Bench/issues/new?labels=leaderboard&title=%5BLeaderboard%5D+",
+  "last_updated": "2026-05",
+  "entries": [
+    {
+      "rank": 1,
+      "system": "Comet",
+      "category": "Commercial",
+      "partial_completion": 48.0, "partial_completion_std": 3.5,
+      "success_rate": 6.0, "success_rate_std": 1.5,
+      "complex_a": 67.0, "complex_a_std": 4.2,
+      "complex_p": 58.0, "complex_p_std": 3.8,
+      "time_min": 6.5,
+      "tokens_k": 104.36
+    },
+    {
+      "rank": 2,
+      "system": "Fellou",
+      "category": "Commercial",
+      "partial_completion": 24.0, "partial_completion_std": 2.0,
+      "success_rate": 7.0, "success_rate_std": 2.0,
+      "complex_a": 28.0, "complex_a_std": 1.9,
+      "complex_p": 25.0, "complex_p_std": 2.1,
+      "time_min": 22.1,
+      "tokens_k": 3.47
+    },
+    {
+      "rank": 3,
+      "system": "Manus",
+      "category": "Commercial",
+      "partial_completion": 23.0, "partial_completion_std": 3.0,
+      "success_rate": 8.0, "success_rate_std": 2.0,
+      "complex_a": 33.0, "complex_a_std": 2.5,
+      "complex_p": 29.0, "complex_p_std": 2.0,
+      "time_min": 5.3,
+      "tokens_k": 7.55
+    },
+    {
+      "rank": 4,
+      "system": "Browser-Use + Claude-4.5-Sonnet",
+      "category": "Open-source agent",
+      "partial_completion": 21.0, "partial_completion_std": 3.0,
+      "success_rate": 5.0, "success_rate_std": 2.0,
+      "complex_a": 32.0, "complex_a_std": 2.4,
+      "complex_p": 32.0, "complex_p_std": 2.5,
+      "time_min": 29.9,
+      "tokens_k": 5.52
+    },
+    {
+      "rank": 5,
+      "system": "Dia",
+      "category": "Commercial",
+      "partial_completion": 19.0, "partial_completion_std": 2.0,
+      "success_rate": 4.0, "success_rate_std": 1.0,
+      "complex_a": 28.0, "complex_a_std": 1.5,
+      "complex_p": 23.0, "complex_p_std": 2.2,
+      "time_min": 1.1,
+      "tokens_k": 3.00
+    },
+    {
+      "rank": 6,
+      "system": "Genspark",
+      "category": "Commercial",
+      "partial_completion": 16.0, "partial_completion_std": 2.0,
+      "success_rate": 5.0, "success_rate_std": 1.0,
+      "complex_a": 30.0, "complex_a_std": 2.1,
+      "complex_p": 28.0, "complex_p_std": 1.8,
+      "time_min": 1.7,
+      "tokens_k": 3.37
+    },
+    {
+      "rank": 7,
+      "system": "Browser-Use + GPT-5",
+      "category": "Open-source agent",
+      "partial_completion": 15.0, "partial_completion_std": 1.0,
+      "success_rate": 2.0, "success_rate_std": 1.0,
+      "complex_a": 29.0, "complex_a_std": 2.0,
+      "complex_p": 23.0, "complex_p_std": 1.5,
+      "time_min": 15.3,
+      "tokens_k": 2.95
+    },
+    {
+      "rank": null,
+      "system": "Human",
+      "category": "Reference",
+      "partial_completion": 35.0, "partial_completion_std": 4.5,
+      "success_rate": 10.0, "success_rate_std": 2.5,
+      "complex_a": 35.0, "complex_a_std": 3.0,
+      "complex_p": 34.0, "complex_p_std": 2.8,
+      "time_min": 16.3,
+      "tokens_k": 71.42
+    }
+  ]
+}

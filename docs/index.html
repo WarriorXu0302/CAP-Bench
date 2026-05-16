@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CAP-Bench: Cross-Site Browser Agents with Complex Actions and Perception</title>
+<meta name="description" content="A scalable benchmark for evaluating browser agents on cross-site web tasks demanding complex actions and visual perception." />
+<meta property="og:title" content="CAP-Bench" />
+<meta property="og:description" content="A scalable benchmark for evaluating cross-site browser agents with complex actions and perception." />
+<meta property="og:image" content="assets/fig1_overview.png" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">CAP-Bench</a>
+    <ul>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#construction">Construction</a></li>
+      <li><a href="#evaluation">Evaluation</a></li>
+      <li><a href="#findings">Findings</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+      <li><a href="#cite">BibTeX</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <h1>CAP: Cross-Site Browser Agents with<br/>Complex Actions and Perception</h1>
+    <p class="subtitle">A scalable benchmark of 420 tasks across 108 real-world websites,
+      with a verifiable agent-as-a-judge evaluation framework.</p>
+
+    <p class="authors">
+      Zejun Xu<sup>*†1,4</sup>,
+      Taiyi Chen<sup>*2</sup>,
+      Jin Li<sup>*</sup>,
+      Yongtong Gu<sup>*3</sup>,
+      Qi Cheng<sup>†4</sup>,
+      Aixuan Lv<sup>4</sup>,
+      Shuai Zhu,
+      Pengfei Zhu<sup>1</sup>,
+      Kaichen Yang<sup>†4</sup>,
+      Boyu Sun<sup>3</sup>,
+      Yixian Yang<sup>1</sup>,
+      Mulong Xie<sup>4</sup>,
+      Xin Liu<sup>1</sup>,
+      Dagang Li<sup>1</sup>,
+      Xiaoteng Ma<sup>2</sup>,
+      Hongru Wang<sup>5</sup>
+    </p>
+    <p class="affiliations">
+      <sup>1</sup>Macau University of Science and Technology &nbsp;·&nbsp;
+      <sup>2</sup>Tsinghua University &nbsp;·&nbsp;
+      <sup>3</sup>Southeast University &nbsp;·&nbsp;
+      <sup>4</sup>FellouAI &nbsp;·&nbsp;
+      <sup>5</sup>The University of Edinburgh
+      <br/><sup>*</sup> Equal contribution &nbsp; <sup>†</sup> Work done during internship at FellouAI
+    </p>
+
+    <div class="btn-row">
+      <a class="btn disabled" href="#" title="arXiv link forthcoming">📄 Paper (arXiv soon)</a>
+      <a class="btn outline" href="https://github.com/WarriorXu0302/CAP-Bench" target="_blank" rel="noopener">💻 Code</a>
+      <a class="btn outline" href="https://huggingface.co/datasets/Warrior0302/CAP" target="_blank" rel="noopener">🤗 Dataset</a>
+      <a class="btn outline" href="leaderboard.html">🏆 Leaderboard</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="num">420</span><span class="label">Tasks</span></div>
+      <div class="stat"><span class="num">108</span><span class="label">Real-world Websites</span></div>
+      <div class="stat"><span class="num">24</span><span class="label">Functional Domains</span></div>
+      <div class="stat"><span class="num">7 / 4</span><span class="label">Avg Actions / Perceptions per Task</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="abstract">
+  <div class="container">
+    <h2>Abstract</h2>
+    <p>
+      Large language models are increasingly deployed as autonomous agents that interact with the web through browsers.
+      While recent progress has been driven by benchmarks that evaluate end-to-end task success, these evaluations largely overlook
+      two fundamental sources of difficulty in real web browsing: <strong>complex actions over rich user interfaces</strong>
+      and <strong>visual perception of dynamically rendered content</strong>, especially in workflows that span multiple websites.
+    </p>
+    <p>
+      We introduce <strong>CAP</strong>, a scalable benchmark for evaluating browser agents on cross-site, human-like web tasks
+      that require non-trivial UI interactions and visual understanding. We adopt a decomposition-and-recomposition pipeline
+      that first abstracts each website into a structured site card capturing user-facing functions, complex execution operations,
+      and perceptual requirements, and then recomposes these components into realistic cross-site workflows.
+    </p>
+    <p>
+      Built on this framework, we construct <strong>420 tasks across 108 real-world websites</strong> in 24 domains under careful quality control.
+      Experiments on state-of-the-art browser agents using our verifiable agent-as-a-judge evaluation framework show
+      <strong>low success rates</strong>, and reveal that <strong>perception-heavy interactions</strong> remain a major bottleneck.
+    </p>
+
+    <figure class="figure">
+      <img src="assets/fig1_overview.png" alt="CAP overview — three complexity dimensions C-A-P" />
+      <figcaption><strong>Figure 1.</strong> CAP targets three sources of difficulty in real-world web browsing —
+        Cross-site workflows, complex Actions, and challenging Perception — and evaluates agents through a verifiable
+        agent-as-a-judge framework with explicit execution and perception checkpoints.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="construction">
+  <div class="container">
+    <h2>Construction Pipeline</h2>
+    <p class="lead">A decomposition-and-recomposition pipeline turns websites into structured site cards
+      and recomposes them into coherent cross-site task instances.</p>
+
+    <figure class="figure">
+      <img src="assets/fig2_construction.png" alt="CAP construction pipeline" />
+      <figcaption><strong>Figure 2.</strong> Four phases:
+        (1) <em>Site Card Annotation</em> decomposes each website into structured functional representations;
+        (2) <em>Cluster Sampling</em> selects coherent website subsets via functional affinity;
+        (3) <em>Task Proposal</em> generates abstract cross-site workflows;
+        (4) <em>Task Instantiation</em> turns proposals into verifiable instances.
+      </figcaption>
+    </figure>
+
+    <p>
+      For each website <em>w</em>, we annotate a <strong>site card</strong>
+      <code>s<sub>w</sub> = ⟨F, A, P⟩</code> recording user-facing functions <em>F</em>,
+      complex execution items <em>A</em>, and perception items <em>P</em>.
+      Site cards are sampled into coherent cross-site subsets, and an LLM proposer + instantiator
+      turn those subsets into concrete tasks with explicit <em>covered points</em> for execution and perception.
+    </p>
+  </div>
+</section>
+
+<section id="evaluation">
+  <div class="container">
+    <h2>Verifiable Agent-as-a-Judge Evaluation</h2>
+    <p class="lead">Each task is automatically converted into a Python evaluation script that materializes
+      a hierarchical rubric tree of independently checkable execution and perception criteria.</p>
+
+    <figure class="figure">
+      <img src="assets/fig3_evaluation.png" alt="CAP-Eval framework" />
+      <figcaption><strong>Figure 3.</strong> Three stages:
+        (1) Prior knowledge &amp; code generation; (2) tree-structured evaluation framework
+        with action / perception / general leaves; (3) agent-based scoring execution
+        with extraction and URL-grounded verification.
+      </figcaption>
+    </figure>
+
+    <p>
+      Leaves are typed as <strong>Action</strong>, <strong>Perception</strong>, or <strong>Other</strong>,
+      and may be marked <em>critical</em> — a failed critical child propagates a zero up the tree (gating),
+      whereas non-critical children only contribute their averaged score once all critical prerequisites pass.
+      A judge agent traverses the tree, extracts structured information from the agent's answer,
+      and verifies each claim against live webpages.
+    </p>
+  </div>
+</section>
+
+<section id="findings">
+  <div class="container">
+    <h2>Key Findings</h2>
+    <p class="lead">Even the best agent reaches only <strong>8.0%</strong> Success Rate.
+      Fine-grained scoring isolates where agents fail.</p>
+
+    <div class="findings">
+      <div class="finding">
+        <h3>Finding 1 · Limited capability overall</h3>
+        <p>Across 7 SOTA browser agents, partial-completion scores cluster around 15–24%, with the strongest
+          commercial system (Comet) reaching 48% only via order-of-magnitude longer outputs.</p>
+      </div>
+      <div class="finding">
+        <h3>Finding 2 · Perception is the bottleneck</h3>
+        <p>Systems trail humans by ~9 points more on Complex-P than on Complex-A. Visual reasoning over
+          rendered charts, badges, and expansion states is the dominant failure mode — not UI manipulation per se.</p>
+      </div>
+      <div class="finding">
+        <h3>Finding 3 · Compute alone is not enough</h3>
+        <p>Top systems lean on extensive deliberation (Comet: 100k+ output tokens, Human: 16 minutes per task),
+          but spending time without using it well does not pay off (Browser-Use + GPT-5: 15 min, 15% completion).</p>
+      </div>
+      <div class="finding">
+        <h3>Finding 4 · Domain-specific UIs are hardest</h3>
+        <p>Sites with specialized visualizations (CDC dashboards, Google Flights' price-calendar grid)
+          score much lower than text-heavy sites like Wikipedia or AccuWeather.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="leaderboard-preview">
+  <div class="container">
+    <h2>Leaderboard <small style="font-size:0.7em; color:var(--muted);">(top 5 + human reference)</small></h2>
+    <p class="lead">Numbers are means with one standard deviation. See the
+      <a href="leaderboard.html">full leaderboard</a> for all systems and submission instructions.</p>
+
+    <div id="lb-preview" class="lb-preview">Loading…</div>
+  </div>
+</section>
+
+<section id="cite">
+  <div class="container">
+    <h2>Citation</h2>
+    <p class="lead">If you use CAP-Bench in your work, please cite:</p>
+    <pre class="bibtex" id="bib"><button class="copy-btn" onclick="copyBibtex()">Copy</button>@misc{cap2026,
+    title  = {CAP: A Scalable Benchmark for Evaluating Cross-Site Browser Agents
+              with Complex Actions and Perception},
+    author = {Xu, Zejun and Chen, Taiyi and Li, Jin and Gu, Yongtong and Cheng, Qi
+              and Lv, Aixuan and Zhu, Shuai and Zhu, Pengfei and Yang, Kaichen
+              and Sun, Boyu and Yang, Yixian and Xie, Mulong and Liu, Xin
+              and Li, Dagang and Ma, Xiaoteng and Wang, Hongru},
+    year   = {2026},
+    note   = {Preprint, arXiv link forthcoming}
+}</pre>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="https://github.com/WarriorXu0302/CAP-Bench">GitHub</a> ·
+      <a href="https://huggingface.co/datasets/Warrior0302/CAP">Hugging Face</a> ·
+      Released under the <a href="https://github.com/WarriorXu0302/CAP-Bench/blob/main/LICENSE">Apache 2.0</a> license
+    </p>
+  </div>
+</footer>
+
+<script src="js/leaderboard.js"></script>
+<script>
+  renderPreview("lb-preview", 5);
+  function copyBibtex() {
+    const text = document.querySelector("pre.bibtex").innerText.replace(/^Copy\n?/, "");
+    navigator.clipboard.writeText(text);
+    const btn = document.querySelector(".copy-btn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy", 1500);
+  }
+</script>
+</body>
+</html>
