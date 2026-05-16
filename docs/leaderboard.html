@@ -5,13 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Leaderboard — CAP-Bench</title>
 <meta name="description" content="CAP-Bench leaderboard for cross-site browser agents." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
 
 <nav class="topbar">
   <div class="container">
-    <a class="brand" href="index.html">CAP-Bench</a>
+    <a class="brand" href="index.html"><span class="dot"></span>CAP-Bench</a>
     <ul>
       <li><a href="index.html#abstract">Abstract</a></li>
       <li><a href="index.html#construction">Construction</a></li>
@@ -23,27 +26,37 @@
   </div>
 </nav>
 
-<header class="hero" style="padding:56px 0 32px;">
+<header class="hero" style="padding:72px 0 36px;">
   <div class="container">
-    <h1 style="font-size:2.2rem;">Leaderboard</h1>
-    <p class="subtitle">Browser agents evaluated on the public split (192 tasks).
-      Click any column header to sort.</p>
-    <p style="font-size:0.9rem; color:var(--muted); margin-top:6px;">
-      Last updated: <span id="lb-updated">—</span>
+    <span class="hero-badge"><span class="pulse"></span>Public split · 192 tasks</span>
+    <h1 style="font-size:clamp(1.8rem, 3.6vw, 2.6rem);">Leaderboard</h1>
+    <p class="subtitle" style="font-size:1.05rem;">
+      Browser agents evaluated by CAP's verifiable agent-as-a-judge framework.
+      Click any column header to sort.
     </p>
-    <div class="btn-row" style="margin-top:18px;">
-      <a class="btn" id="lb-submit" href="#">📨 Submit your results</a>
+    <p style="font-size:0.9rem; color:var(--muted); margin:0;">
+      Last updated: <span id="lb-updated" style="color:var(--accent); font-weight:600;">—</span>
+    </p>
+    <div class="btn-row" style="margin-top:24px;">
+      <a class="btn gradient" id="lb-submit" href="#">
+        <span class="icon">📨</span> Submit your results
+      </a>
       <a class="btn outline" href="index.html">← Back to overview</a>
     </div>
   </div>
 </header>
 
-<section style="padding-top:32px;">
+<section style="padding:48px 0 64px;">
   <div class="container">
-    <div id="lb-full" class="lb-preview">Loading…</div>
+    <div class="lb-card" id="lb-full">Loading…</div>
+  </div>
+</section>
 
-    <h2 style="margin-top:48px; font-size:1.25rem;">Metric definitions</h2>
-    <ul style="font-size:0.95rem; color:var(--muted);">
+<section class="alt-bg">
+  <div class="container-sm markdown">
+    <span class="eyebrow">Reference</span>
+    <h2>Metric Definitions</h2>
+    <ul style="font-size:0.96rem; line-height:1.85;">
       <li><strong>Partial Completion</strong> — mean root-node score across tasks (graded progress).</li>
       <li><strong>Success Rate</strong> — fraction of tasks scoring 1.0 (end-to-end completion).</li>
       <li><strong>Complex-A</strong> — mean leaf score over <em>action</em> nodes (UI execution complexity).</li>
@@ -51,19 +64,19 @@
       <li><strong>Time</strong> / <strong>Output</strong> — average end-to-end wall-clock time and output length per task.</li>
     </ul>
 
-    <h2 style="margin-top:36px; font-size:1.25rem;">How to submit</h2>
+    <h2 style="margin-top:48px;">How to Submit</h2>
     <p>
       To add a new system to this leaderboard,
-      <a id="lb-submit-link" href="#">open a GitHub issue</a> with the
+      <a id="lb-submit-link" href="#"><strong>open a GitHub issue</strong></a> with the
       <code>leaderboard</code> label and include:
     </p>
-    <ol>
+    <ol style="font-size:0.96rem; line-height:1.85;">
       <li>A short system description and the agent / model versions used.</li>
       <li>The four CAP metrics (Partial Completion, Success Rate, Complex-A, Complex-P) with standard deviations.</li>
       <li>Average wall-clock time and output length per task.</li>
       <li>A link to your evaluation logs (preferred) or a brief description of the evaluation setup.</li>
     </ol>
-    <p>We will review and merge submissions on a rolling basis.</p>
+    <p style="color:var(--muted);">We review and merge submissions on a rolling basis.</p>
   </div>
 </section>
 
@@ -72,6 +85,7 @@
     <p>
       <a href="https://github.com/WarriorXu0302/CAP-Bench">GitHub</a> ·
       <a href="https://huggingface.co/datasets/Warrior0302/CAP">Hugging Face</a> ·
+      <a href="https://github.com/WarriorXu0302/CAP-Bench/issues">Report an issue</a> ·
       Released under the <a href="https://github.com/WarriorXu0302/CAP-Bench/blob/main/LICENSE">Apache 2.0</a> license
     </p>
   </div>
@@ -80,7 +94,6 @@
 <script src="js/leaderboard.js"></script>
 <script>
   renderFull("lb-full", "lb-updated", "lb-submit");
-  // mirror submit URL into the inline link too
   fetch("data/leaderboard.json").then(r => r.json()).then(d => {
     if (d.submission_url) document.getElementById("lb-submit-link").href = d.submission_url;
   });

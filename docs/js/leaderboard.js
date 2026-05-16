@@ -31,10 +31,14 @@ function categoryBadge(cat) {
 }
 
 function renderRows(entries, includeExtra = true) {
-  return entries.map((e) => {
+  return entries.map((e, idx) => {
     const refClass = e.category === "Reference" ? "reference" : "";
-    const rank = e.rank ?? "—";
-    let html = `<tr class="${refClass}">`;
+    // Apply medal class only when entries are sorted by partial_completion descending
+    // and the entry is in the top 3 of non-reference systems.
+    const rankClass = (e.category !== "Reference" && idx < 3) ? `rank-${idx + 1}` : "";
+    const cls = [refClass, rankClass].filter(Boolean).join(" ");
+    const rank = e.category === "Reference" ? "—" : (idx + 1);
+    let html = `<tr class="${cls}">`;
     html += `<td>${rank}</td>`;
     html += `<td><strong>${e.system}</strong>${categoryBadge(e.category)}</td>`;
     for (const col of METRIC_COLS) {
