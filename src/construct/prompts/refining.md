@@ -1,442 +1,509 @@
-# 任务完善指南
+# Task Refinement Guide
 
-将任务提议者的语义骨架细化为最终可执行、可验证的benchmark任务。
+You are instantiating a task proposal into a concrete, executable, and verifiable benchmark task.
 
-**核心目标（按优先级）**：
-1. 保持任务的自然合理性
-2. 确保任务在事实上可完成
-3. 隐含地将任务难度向复杂操作/感知方向引导
-4. 确保任务可验证
-5. 确保任务与DeepResearch类任务有本质区别
-6. 确保整个信息流是清晰的，不要一开始没有明确的输入，或者网站之间的传递物模糊，或者感觉像是多个网站刻意地拼凑在了一起，没有信息流传递。
+## INPUT
 
-## 任务鲁棒性设计
+- A single task proposal with user scenario and information flow
+- Site cards with functions F, execution items A and perception items P for involved websites
 
-### 核心原则：范围筛选优于极值查询
+## GOAL-ORIENTED ELICITATION
 
-**极值查询的问题**：依赖"最多""最火""最新""排名第一"等表述，往往需要网站支持特定排序功能，而很多网站不支持或排序结果不稳定。
+Express requirements through user goals, NOT UI operations. This ensures complex interactions are triggered implicitly while keeping task descriptions natural.
 
-**解决方案**：用范围筛选替代极值查询
+**WRONG**: "Use the duration filter to select videos under 10 minutes"  
+**RIGHT**: "Find tutorial videos under 10 minutes"
 
-| 极值查询（❌） | 范围筛选（✓） |
+**WRONG**: "Scroll down to load more comments, then click expand"  
+**RIGHT**: "Check what users are discussing about this product"
+
+**WRONG**: "Click the expand button to show the full description"  
+**RIGHT**: "Verify if the video description mentions the original paper"
+
+**WRONG**: "Hover over the seller name to view reputation score"  
+**RIGHT**: "Find products from sellers with reputation above 4.8"
+
+## OUTPUT FIELD DESIGN
+
+Every output field must serve one of three verification roles:
+
+**1. User Value**: Core information the user actually needs  
+Examples: product name, course title, paper abstract
+
+**2. Condition Verification**: Fields to validate filter criteria used in the task  
+CRITICAL: If task says "rating >= 4.5", output MUST include the rating  
+If task says "published within 2 years", output MUST include date  
+If task says "distance under 5 miles", output MUST include distance
+
+**3. Provenance**: URLs for source verification to prevent hallucination  
+Every claimed fact should be traceable to a source URL
+
+## ROBUSTNESS GUIDELINES
+
+**1. Prefer Range Filtering over Superlatives**  
+WRONG: "Find the most downloaded model" (sorting may not be supported)  
+RIGHT: "Find 5 models with downloads exceeding 10,000"  
+Reason: Superlatives require specific sorting features; range filters are more robust
+
+**2. Prefer Relative Time over Absolute Dates**  
+WRONG: "Find events on June 20, 2026" (task expires)  
+RIGHT: "Find events next weekend"  
+Reason: Absolute dates make tasks time-sensitive and eventually invalid
+
+**3. Include Fallback Instructions for Dynamic Content**  
+"If this weekend has no events, check next weekend"  
+"If the course is unavailable, find alternatives from the same instructor"  
+Reason: Web content changes; fallbacks ensure task remains completable
+
+**4. Specify Quantities Explicitly**  
+WRONG: "Find some highly-rated restaurants"  
+RIGHT: "Find 5 restaurants with rating above 4.5"  
+Reason: Explicit quantities enable objective evaluation
+
+**5. Consolidate Output Requirements**  
+Place all output requirements at the END of task description, not scattered throughout  
+WRONG: "Find books on Goodreads, note title and author. Then check reviews on StoryGraph, record the mood tags. Finally..."  
+RIGHT: "Find books on Goodreads... check reviews on StoryGraph... Output for each book: title, author, Goodreads rating, StoryGraph mood tags, and URLs for both platforms."
+
+## TASK DESCRIPTION STYLE
+
+- First person ("I want...", "Help me...")
+- Natural conversational tone, as if talking to an AI assistant
+- 100-250 words
+- Include context that implicitly triggers complex operations
+
+---
+
+# Full Task Refinement Guide (Extended)
+
+## Task Robustness Design
+
+### Core Principle: Range Filtering over Superlatives
+
+**Problem with superlatives**: Queries relying on "most", "hottest", "latest", "ranked first" often require specific sorting features that many websites don't support or produce unstable results.
+
+**Solution**: Use range filtering instead of superlative queries
+
+| Superlative Query [WRONG] | Range Filter [RIGHT] |
 |--------------|--------------|
-| "找学员数最多的5门课程" | "找5门评分4.5以上、时长17小时以上的课程" |
-| "找播放量最高的视频" | "找5个播放量超过10万的视频" |
-| "找评论数最多的Issue" | "找5个评论数超过50条的Issue" |
-| "找销量第一的商品" | "找3个销量超过1000件、评分4.5以上的商品" |
+| "Find the 5 courses with most students" | "Find 5 courses with rating above 4.5 and duration over 17 hours" |
+| "Find the video with highest views" | "Find 5 videos with over 100,000 views" |
+| "Find the Issue with most comments" | "Find 5 Issues with over 50 comments" |
+| "Find the best-selling product" | "Find 3 products with over 1,000 sales and rating above 4.5" |
 
-**例外情况**：如果排序是任务核心且网站明确支持（如YouTube的"按观看次数排序"），可以使用，但应同时输出排序字段的具体数值便于验证。
+**Exception**: If sorting is core to the task and the website explicitly supports it (e.g., YouTube's "Sort by view count"), it can be used, but should output the specific sorting field values for verification.
 
-### 内置容错策略
+### Built-in Fallback Strategies
 
-当任务涉及**不确定是否可用的功能或内容**时，可在任务描述中自然地内置备选方案，但不应喧宾夺主：
+When tasks involve **features or content with uncertain availability**, naturally embed fallback options in the task description without overshadowing the main goal:
+
 ```
-✓ 自然的容错："去Weather Underground查西雅图6月中旬的历史天气数据"
-✓ 轻量备选："如果该课程已下架，选择同讲师的其他课程"
-✓ 时间容错："查看下周六的活动安排；如果尚未发布，查看本周六的"
+[NATURAL] Natural fallback: "Check Weather Underground for historical weather data in Seattle for mid-June"
+[LIGHT] Light alternative: "If the course is unavailable, choose another course from the same instructor"
+[TIME] Time fallback: "Check next Saturday's event schedule; if not yet published, check this Saturday's"
 
-❌ 过度依赖备选："先去A网站，如果A不行去B，B也不行就去C..."（喧宾夺主）
+[WRONG] Over-reliance on fallbacks: "First try site A, if A doesn't work go to B, if B also fails go to C..." (overshadows main goal)
 ```
 
-### 高风险场景提示
+### High-Risk Scenario Alerts
 
-以下场景设计任务时需特别注意：
+Pay special attention when designing tasks in these scenarios:
 
-| 场景 | 风险 | 建议 |
-|-----|------|------|
-| 历史天气数据 | 部分天气网站只有预报 | 明确使用Weather Underground、NOAA等 |
-| 按特定字段排序 | 网站可能不支持 | 改用范围筛选 |
-| 小众品类商品筛选 | 商品数量可能不足 | 选择热门品类或放宽条件 |
-| 特定内容是否存在 | 可能不存在 | 选择确定存在的内容，或加轻量兜底 |
+| Scenario | Risk | Recommendation |
+|----------|------|----------------|
+| Historical weather data | Some weather sites only have forecasts | Explicitly use Weather Underground, NOAA, etc. |
+| Sorting by specific fields | Website may not support it | Use range filtering instead |
+| Niche category product filtering | Insufficient product count | Choose popular categories or relax conditions |
+| Existence of specific content | May not exist | Choose confirmed existing content, or add light fallback |
 
-## 广义SQL视角：任务构造框架
+## Generalized SQL Perspective: Task Construction Framework
 
-本Benchmark测试AI浏览器（"广义SQL执行器"）能否正确执行任务指令（"广义SQL命令"）。
+This benchmark tests whether AI browsers ("generalized SQL executors") can correctly execute task instructions ("generalized SQL commands").
 
-| 数据库概念 | Benchmark对应 |
-|-----------|--------------|
-| 数据库/表 | 网站 |
-| 字段 | 网站上的信息点 |
-| WHERE条件 | 筛选要求（复杂项来源） |
-| SELECT字段 | 输出要求 |
-| JOIN | 跨网站信息关联 |
-| ORDER BY + LIMIT | 排序+数量限制 |
-| 查询结果 | AI返回的文本+URL |
+| Database Concept | Benchmark Correspondence |
+|-----------------|-------------------------|
+| Database/Table | Website |
+| Field | Information points on the website |
+| WHERE condition | Filtering requirements (source of complexity) |
+| SELECT fields | Output requirements |
+| JOIN | Cross-site information association |
+| ORDER BY + LIMIT | Sorting + quantity limits |
+| Query result | Text + URLs returned by AI |
 
-**目标SQL模式**：多条件WHERE + 跨表JOIN + 明确SELECT + ORDER BY + LIMIT  
-**避免**：`SELECT * FROM website WHERE keyword='xxx' LIMIT 10`
+**Target SQL pattern**: Multi-condition WHERE + Cross-table JOIN + Clear SELECT + ORDER BY + LIMIT  
+**Avoid**: `SELECT * FROM website WHERE keyword='xxx' LIMIT 10`
 
-### 条件查询优于存在性判断
+### Conditional Queries over Existence Checks
 
-| 存在性判断（❌） | 条件查询（✓） |
+| Existence Check [WRONG] | Conditional Query [RIGHT] |
 |----------------|--------------|
-| "确认是否包含XX模块" | "找5个课程，列出各自的模块" |
-| "检查是否有Bestseller标签" | "找3个带Bestseller标签的产品" |
-| "验证播放量是否超10万" | "找播放量最高的5个视频，提供播放量" |
+| "Confirm if it includes XX module" | "Find 5 courses, list their respective modules" |
+| "Check if Bestseller tag exists" | "Find 3 products with Bestseller tag" |
+| "Verify if views exceed 100,000" | "Find the 5 videos with highest views, provide view counts" |
 
-**原因**：存在性判断只产生1bit信息，条件查询产生N行×M列数据点，更便于评估。
+**Reason**: Existence checks produce only 1 bit of information; conditional queries produce N rows × M columns of data points, making evaluation easier.
 
-### 任务描述连贯性要求
+### Task Description Coherence Requirements
 
-**主题贯穿原则**：任务描述应始终让读者知道"当前操作的对象是什么"。
+**Theme Continuity Principle**: Task descriptions should always let readers know "what object is being operated on currently".
 
-| 问题 | 示例 | 修复 |
-|-----|------|------|
-| 中途断开主题 | "想收藏专辑A...筛选Near Mint商品" | 用指代词连接："筛选【该专辑】的Near Mint商品" |
-| 存在性判断无后续 | "确认是否存在X" | 明确："若有X则...；若无则..." |
-| 距离约束无验证 | "找1英里内的酒店" | 引入maps.google.com验证距离 |
-| **突兀引入新元素** | "最后搜索'Gapminder Hans Rosling'" | 新元素必须与前文有明确关联，或在开头人设中预先铺垫 |
+| Problem | Example | Fix |
+|---------|---------|-----|
+| Theme break mid-task | "Want to collect album A... filter Near Mint items" | Use pronouns: "Filter Near Mint items for [that album]" |
+| Existence check without follow-up | "Confirm if X exists" | Clarify: "If X exists then...; if not then..." |
+| Distance constraint without verification | "Find hotels within 1 mile" | Introduce maps.google.com to verify distance |
+| **Abrupt introduction of new elements** | "Finally search 'Gapminder Hans Rosling'" | New elements must have clear connection to preceding context, or be铺垫 in opening persona |
 
-**新元素引入规则**：
-- 任务中后半段出现的任何**具体人名、术语、关键词**，必须：
-  - (A) 是从前面步骤动态获取的，或
-  - (B) 在任务开头的人设/背景中已提及
-- 禁止在任务中途突然引入与前文无逻辑关联的搜索词
+**New Element Introduction Rules**:
+- Any **specific names, terms, keywords** appearing in the latter half of the task must:
+  - (A) Be dynamically obtained from previous steps, OR
+  - (B) Be mentioned in the opening persona/background
+- Prohibit suddenly introducing search terms with no logical connection to preceding context mid-task
 
-**存在性判断必须明确后续动作**：
+**Existence checks must specify follow-up actions**:
 ```
-❌ "确认是否存在requirements.txt"
-✓ "确认有requirements.txt；若无，换下一个模型直到找到有的"
-✓ "输出是否有requirements.txt（有/无），若无则说明部署注意事项"
-```
-
-### 评估逻辑
-
-验证WHERE条件字段是否满足、SELECT字段是否完整、通过URL验证防幻觉
-
-### 输出字段设计原则
-
-**核心规则：WHERE条件中用到的字段必须作为输出项要求**
-
-| 字段类型 | 说明 | 示例 |
-|---------|------|------|
-| 用户价值字段 | 用户真正需要的信息 | 课程名称、链接、讲师 |
-| WHERE验证字段 | 用于验证筛选条件 | 评分、时长、价格、日期 |
-| URL验证字段 | 用于防幻觉验证 | 详情页链接 |
-
-**WHERE条件→输出字段映射**：
-
-| WHERE条件 | 必须输出 |
-|-----------|---------|
-| 评分≥4.5 / 价格$5-$15 / 时长≥17小时 | 具体数值 |
-| 发布时间1年内 | 发布日期 |
-| 带有某标签 | 是否有该标签 |
-
-**示例**：
-- ❌ 找评分4.5+、时长17小时+的课程。输出：课程名称、讲师、价格
-- ✓ 找评分4.5+、时长17小时+的课程。输出：课程名称、讲师、价格、**评分、时长**、课程链接
-
-### 输出与能力点的完整映射
-
-**核心约束：每个covered_point必须有对应的core_output用于验证。**
-
-| 遗漏场景 | 修复方法 |
-|---------|---------|
-| 展开描述但不要求输出 | 补充"描述摘要"输出项 |
-| Tab切换但不要求输出 | 补充切换后关键信息输出项 |
-| 滚动加载但不要求输出 | 补充"评论观点及数量"输出项 |
-| 筛选操作但不要求输出 | 补充筛选条件数值字段 |
-
-**修复示例**：
-```
-❌ 修复前：
-任务：查看视频描述确认是否提到该论文...
-输出：视频标题、观看次数、链接
-问题：youtube.com:F5:A30(展开折叠) → 无对应output
-
-✓ 修复后：
-任务：查看视频描述确认是否提到该论文，简要说明描述中的关键信息...
-输出：视频标题、观看次数、链接、**视频描述摘要**
-映射：youtube.com:F5:A30 → output_ref: o9(描述摘要)
+[WRONG] "Confirm if requirements.txt exists"
+[RIGHT] "Confirm requirements.txt exists; if not, move to next model until finding one that has it"
+[RIGHT] "Output whether requirements.txt exists (yes/no); if not, explain deployment considerations"
 ```
 
-## Benchmark定位要求
+### Evaluation Logic
 
-本Benchmark聚焦于**复杂操作与复杂感知**能力评测，任务必须包含以下至少一项：
-- **复杂UI操作**：展开折叠、滚动加载、弹窗多选、拖拽排序等
-- **数据/状态感知**：理解表格数据含义、识别UI状态变化
+Verify whether WHERE condition fields are satisfied, SELECT fields are complete, and use URLs for hallucination prevention.
 
-**判断标准**：如果任务仅通过搜索引擎+LLM即可完成，则不适合本Benchmark。
+### Output Field Design Principles
 
-**评估器限制**：
-- 评估器只能获取agent输出的文本结果，任务成功必须可通过文本或URL判断
-- **避免图片/视频感知**：不要设计需要查看图片/视频、识别视觉特征、进行视觉对比的任务
-- **避免跨模态匹配**：不要设计视觉信息转搜索条件再视觉验证的任务
+**Core rule: Fields used in WHERE conditions must be required as output items**
 
-**Ground Truth友好性**：
-- 尽量让任务答案相对封闭固定，便于标注GT
-- 避免时变结果（最新、最热且非持续性的）
-- 关注相对稳定的特征，确保输出包含这类特征
+| Field Type | Description | Example |
+|-----------|-------------|---------|
+| User value fields | Information users actually need | Course name, link, instructor |
+| WHERE verification fields | For validating filter conditions | Rating, duration, price, date |
+| URL verification fields | For hallucination prevention | Detail page links |
 
-## 完善策略
+**WHERE condition → Output field mapping**:
 
-### 隐含引导策略
+| WHERE Condition | Must Output |
+|----------------|-------------|
+| Rating ≥ 4.5 / Price $5-$15 / Duration ≥ 17 hours | Specific values |
+| Published within 1 year | Publication date |
+| Has certain tag | Whether tag exists |
 
-通过调整任务要求，使AI**自然地**遇到复杂操作/感知难点，而非显式要求。
+**Example**:
+- [WRONG] Find courses with rating 4.5+ and duration 17+. Output: course name, instructor, price
+- [RIGHT] Find courses with rating 4.5+ and duration 17+. Output: course name, instructor, price, **rating, duration**, course link
 
-**核心区分**：
-- **要隐含的**：UI操作方式（点击、展开、使用筛选器）
-- **要明确的**：筛选条件的具体数值（WHERE条件必须精确，便于eval）
+### Complete Mapping between Outputs and Capability Points
 
-| 目标能力 | 显式要求（❌） | 隐含引导（✓） |
-|---------|--------------|--------------|
-| 时长筛选 | "使用筛选功能选择4分钟以内" | "4分钟以内的视频" |
-| 距离约束 | "在地图上测量驾车距离" | "驾车距离在15英里以内" |
-| 滚动加载 | "请滚动页面加载更多" | "看看评论区有没有人提到XX问题" |
-| 展开折叠 | "请点击展开按钮" | "看看大家是怎么回复这条热评的" |
-| 弹窗多选 | "请在弹窗中勾选多个选项" | "收藏到'学习资料'和'待整理'两个收藏夹" |
-| 表格理解 | "请理解表格中各列含义" | "找出h5指数最高的3个期刊" |
-| 状态识别 | "请判断按钮是否已点击" | "如果还没收藏就帮我收藏一下" |
-| 多源对比 | "请对比三个平台的信息" | "看看哪个平台价格最划算" |
-| 规则约束 | "请按规则筛选" | "每段距离控制在300-500英里" |
-| 路线规划 | "请规划满足约束的路线" | "找出沿途满足续航要求的充电站"        |
+**Core constraint: Every covered_point must have a corresponding core_output for verification.**
 
-### 增加定位难度
+| Omission Scenario | Fix Method |
+|------------------|------------|
+| Expand description but don't require output | Add "description summary" output item |
+| Tab switch but don't require output | Add key information output after switching |
+| Scroll loading but don't require output | Add "comment viewpoints and count" output item |
+| Filter operation but don't require output | Add filter condition value fields |
 
-避免点查询（直接给精确目标），改为条件查询：
+**Fix example**:
+```
+[BEFORE FIX]:
+Task: Check video description to confirm if it mentions the paper...
+Output: Video title, view count, link
+Problem: youtube.com:F5:A30 (expand/collapse) → no corresponding output
 
-| 点查询（❌） | 条件查询（✓） | 难度来源 |
-|------------|--------------|---------|
-| 找Google的UX课程 | 找5个UX课程，确保包含Google | 需要筛选对比 |
-| 找馆藏编号90.PA.20 | 找梵高的《鸢尾花》 | 需要搜索定位 |
-| 找某个特定医院 | 找US News排名前5的医院 | 需要理解排名 |
+[AFTER FIX]:
+Task: Check video description to confirm if it mentions the paper, briefly explain key information in the description...
+Output: Video title, view count, link, **video description summary**
+Mapping: youtube.com:F5:A30 → output_ref: o9 (description summary)
+```
 
-### 排序类任务要求
+## Benchmark Positioning Requirements
 
-**四个必须**：
-1. **输出排序字段数值**：便于自证排序正确性
-2. **明确升序/降序**：任务描述须写明排列方向
-3. **N适当放大**：建议N≥3，数据点越多越易验证
-4. **额外输出M个排序字段**：除N个完整结果外，再输出后续M个的排序字段值（无需其他详情）
+This benchmark focuses on evaluating **complex operation and complex perception** capabilities. Tasks must include at least one of:
+- **Complex UI operations**: Expand/collapse, scroll loading, popup multi-select, drag-and-drop sorting, etc.
+- **Data/state perception**: Understanding table data meanings, recognizing UI state changes
 
-**示例**：
-- ❌ 找出播放量最高的视频，输出标题和链接
-- ✓ 找出播放量最高的5个视频，按播放量降序输出标题、播放量和链接。另列出第6-8名的播放量供参考
+**Judgment criterion**: If a task can be completed solely through search engine + LLM, it is not suitable for this benchmark.
 
-### 事实合理性处理
+**Evaluator limitations**:
+- Evaluators can only access text results output by agents; task success must be determinable through text or URLs
+- **Avoid image/video perception**: Do not design tasks requiring viewing images/videos, recognizing visual features, or performing visual comparisons
+- **Avoid cross-modal matching**: Do not design tasks that convert visual information to search conditions then visually verify
 
-**核心原则**：确保任务可完成、可验证。确认要素存在的基础上尽可能使用具体描述。
+**Ground Truth friendliness**:
+- Make task answers relatively closed and fixed for easier GT annotation
+- Avoid time-varying results (newest, hottest non-persistent content)
+- Focus on relatively stable features, ensure outputs include such features
 
-| 依据类型 | 处理方式 |
-|---------|---------|
-| 功能点列表中明确包含 | 直接使用具体描述 |
-| 知名平台标准功能（如LinkedIn的Easy Apply） | 直接使用具体描述 |
-| 广为人知的事实 | 直接使用具体描述 |
-| 仅凭推测判断 | 模糊化处理或验证后使用 |
+## Refinement Strategies
 
-**仅在以下情况使用模糊化处理**：
+### Implicit Guidance Strategy
 
-- 要素存在性确实无法确认
-- 内容是动态变化的（如热门评论、实时排名）
-- 存在多个有效答案需要AI选择
+Adjust task requirements so AI **naturally** encounters complex operation/perception challenges, rather than explicitly requiring them.
 
-### 领域常识核查
+**Core distinction**:
+- **To be implicit**: UI operation methods (clicking, expanding, using filters)
+- **To be explicit**: Specific values of filter conditions (WHERE conditions must be precise for evaluation)
 
-在完善任务时，需核查任务是否符合领域常识：
+| Target Capability | Explicit Requirement [WRONG] | Implicit Guidance [RIGHT] |
+|------------------|-----------------------------|--------------------------|
+| Duration filtering | "Use filter function to select under 4 minutes" | "Videos under 4 minutes" |
+| Distance constraint | "Measure driving distance on map" | "Driving distance within 15 miles" |
+| Scroll loading | "Please scroll page to load more" | "See if anyone in comments mentions XX issue" |
+| Expand/collapse | "Please click expand button" | "See how people replied to this hot comment" |
+| Popup multi-select | "Please check multiple options in popup" | "Save to 'Study Materials' and 'To Organize' collections" |
+| Table understanding | "Please understand meaning of each column" | "Find the 3 journals with highest h5 index" |
+| State recognition | "Please determine if button was clicked" | "If not yet saved, help me save it" |
+| Multi-source comparison | "Please compare information across three platforms" | "See which platform has the best price" |
+| Rule constraints | "Please filter according to rules" | "Control each segment distance to 300-500 miles" |
+| Route planning | "Please plan route satisfying constraints" | "Find charging stations along the route meeting range requirements" |
 
-| 核查项 | 错误示例 | 问题 |
-|-------|---------|------|
-| 内容类型匹配 | 去Genius找《River Flows in You》歌词 | 纯音乐无歌词 |
-| 平台功能匹配 | 去GitHub查论文引用数 | GitHub非学术平台 |
-| 实体属性匹配 | 查已故人物"最新动态" | 逻辑错误 |
+### Increase Localization Difficulty
 
-**核查方法**：
-- 对于不熟悉的领域，**先用搜索工具确认基本事实**
-- 任务中的每个"去XX找YY"都应确认XX平台确实有YY类内容
-- 选用新颖实体时，先搜索确认其在目标网站上可查到
-- 若不确定，在任务中加入兜底指令
+Avoid point queries (directly giving precise targets), change to conditional queries:
 
-### 功能点筛选与选择性覆盖
+| Point Query [WRONG] | Conditional Query [RIGHT] | Difficulty Source |
+|--------------------|--------------------------|------------------|
+| Find Google's UX course | Find 5 UX courses, ensure including Google | Requires filtering and comparison |
+| Find collection number 90.PA.20 | Find Van Gogh's "Irises" | Requires search and localization |
+| Find a specific hospital | Find top 5 hospitals in US News ranking | Requires understanding rankings |
 
-上游`function_points`是潜在可能性，**并非都需用上**。分析哪些是任务主线必需、哪些可能触发但非核心、哪些无关可忽略。
+### Sorting Task Requirements
 
-**选择8-20个操作/感知点覆盖**：
+**Four musts**:
+1. **Output sorting field values**: Facilitates self-proof of sorting correctness
+2. **Specify ascending/descending**: Task description must state sort direction
+3. **Appropriate N amplification**: Recommend N≥3, more data points easier to verify
+4. **Extra output of M sorting fields**: Besides N complete results, additionally output sorting field values for next M items (no other details needed)
 
-| 优先级 | 类型 | 目标数量 |
-|-------|------|---------|
-| 高 | 复杂UI操作（多选、展开折叠、滚动加载、地图交互） | ≥3个 |
-| 高 | 数据/状态感知（表格理解、状态识别、层级导航） | ≥3个 |
-| 中 | 翻页浏览、表单交互、排序筛选 | ≥2个 |
-| 低 | 简单点击、基础导航 | 按需 |
+**Example**:
+- [WRONG] Find the video with highest views, output title and link
+- [RIGHT] Find the 5 videos with highest views, output titles, view counts, and links in descending order by views. Additionally list view counts for ranks 6-8 for reference
 
-**覆盖密度原则**：
-- 每个核心网站应覆盖**至少1-2个**操作或感知点
-- 官网类附加网站没有复杂项（仅简单信息获取）
-- 信息链的每一跳应有**至少1个**复杂交互点
-- 总计：action_points ≥ 5，perception_points ≥ 4
+### Factual Reasonableness Handling
 
-**放弃原则**：如果某操作感知项无法自然融入任务，应放弃覆盖而非强行加入。
+**Core principle**: Ensure tasks are completable and verifiable. Confirm element existence before using specific descriptions as much as possible.
 
-**覆盖记录规范**：
-- 每个被覆盖的操作点(A)和感知点(P)都必须在`covered_points`中单独列出
-- `point_id`格式必须精确到`website.com:Fx:Ay`或`website.com:Fx:Pz`
-- 禁止使用只到功能点(F)级别的模糊标识如`website.com:F3`
-- `covered_points`的条目数必须与`action_point_count + perception_point_count`严格相等
+| Evidence Type | Handling Method |
+|--------------|----------------|
+| Explicitly included in function point list | Use specific description directly |
+| Well-known platform standard features (e.g., LinkedIn's Easy Apply) | Use specific description directly |
+| Widely known facts | Use specific description directly |
+| Based only on speculation | Fuzzy handling or verify before use |
 
-### 表述规范
+**Use fuzzy handling ONLY in these cases**:
 
-使用**目标导向**而非路径导向的表述：
+- Element existence truly cannot be confirmed
+- Content is dynamically changing (e.g., hot comments, real-time rankings)
+- Multiple valid answers exist requiring AI selection
 
-| 表述类型 | 错误示例 | 正确示例 |
-|---------|---------|---------|
-| 操作描述 | "点击收藏按钮打开弹窗后勾选" | "收藏到你的学习资料收藏夹" |
-| 内容查找 | "滚动评论区加载20条评论" | "看看评论区大家在讨论什么" |
+### Domain Common Sense Verification
 
-## 用户指令撰写规范
+When refining tasks, verify whether tasks conform to domain common sense:
 
-### 风格要求
+| Check Item | Wrong Example | Problem |
+|-----------|--------------|---------|
+| Content type matching | Go to Genius to find lyrics for "River Flows in You" | Pure instrumental music has no lyrics |
+| Platform function matching | Go to GitHub to check paper citation count | GitHub is not an academic platform |
+| Entity attribute matching | Check "latest updates" for deceased person | Logical error |
 
-| 要素 | 要求 |
-|-----|------|
-| 人称 | 第一人称（"我想..."、"帮我..."） |
-| 语气 | 自然口语化，如真实用户与AI助手对话 |
-| 长度 | 100-250字 |
-| 要点 | 包含能隐含触发复杂操作/感知的表述，保持事实合理性 |
+**Verification methods**:
+- For unfamiliar domains, **first use search tools to confirm basic facts**
+- For each "go to XX to find YY" in the task, confirm XX platform indeed has YY-type content
+- When selecting novel entities, first search to confirm they can be found on target websites
+- If uncertain, add fallback instructions in the task
 
-### 表述清晰度要求
+### Function Point Selection and Selective Coverage
 
-| 要素 | 要求 | 示例 |
-|-----|------|------|
-| 任务边界 | 明确做什么、不做什么 | "选两个班次——一个上午、一个下午" |
-| 输出格式 | 说明每项需要什么信息 | "提供出发时间、票价、行程时长" |
-| 特殊情况 | 预设可能情况及处理方式 | "如果还未公布，请明确说明" |
-| 验证要求 | 说明如何验证结果 | "提供官网搜索结果页面的链接" |
-| 兜底指令 | 预设找不到时的输出 | "若未找到，说明原因并推荐替代" |
+Upstream `function_points` are potential possibilities, **not all need to be used**. Analyze which are essential to task主线, which may trigger but are non-core, and which are irrelevant and can be ignored.
 
-### 输出要求规范
+**Select 8-20 operation/perception points to cover**:
 
-**输出要求统一放在任务描述末尾**，遵循三层结构：
+| Priority | Type | Target Count |
+|----------|------|-------------|
+| High | Complex UI operations (multi-select, expand/collapse, scroll loading, map interaction) | ≥3 |
+| High | Data/state perception (table understanding, state recognition, hierarchical navigation) | ≥3 |
+| Medium | Pagination browsing, form interaction, sorting/filtering | ≥2 |
+| Low | Simple clicks, basic navigation | As needed |
 
-| 层级 | 说明 | 必要性 |
-|-----|------|-------|
-| 用户价值字段 | 用户实际需要的核心信息 | 必须 |
-| WHERE验证字段 | 筛选条件涉及的数值/状态字段 | 必须（eval需要） |
-| URL验证字段 | 对应页面的直接链接 | 必须（防幻觉） |
+**Coverage density principle**:
+- Each core website should cover **at least 1-2** operation or perception points
+- Official website additions have no complex items (only simple information retrieval)
+- Each hop in the information chain should have **at least 1** complex interaction point
+- Total: action_points ≥ 5, perception_points ≥ 4
 
-**⚠️ 强制要求**：
-- 任务描述中**不要在每个网站操作后分散列出输出项**
-- 所有输出要求**必须统一放在任务描述的最后一段**
-- 中间步骤只描述操作目标，不列出"记下XX、提供YY"
+**Abandonment principle**: If an operation/perception item cannot be naturally integrated into the task, abandon coverage rather than forcing inclusion.
 
-**改写示例**：
-- ❌ 先去Goodreads找书，**记下书名、作者和ISBN**。然后去StoryGraph查心情标签，**记下标签分布**。最后去Amazon查价格，**提供价格和链接**。
-- ✓ 先去Goodreads找2024年9月后出版、评分4.2以上的当代文学新书5本。然后去StoryGraph查每本书的心情标签分布和节奏评价，筛选出emotional/reflective占比超60%的。最后去Amazon查批发价格。**输出：书名、作者、ISBN、Goodreads评分、StoryGraph心情标签占比、Amazon批发价、各平台详情页链接。**
+**Coverage recording specification**:
+- Each covered operation point (A) and perception point (P) must be listed separately in `covered_points`
+- `point_id` format must be precise to `website.com:Fx:Ay` or `website.com:Fx:Pz`
+- Prohibit using vague identifiers only to function point (F) level like `website.com:F3`
+- Number of `covered_points` entries must strictly equal `action_point_count + perception_point_count`
 
-### 正面示例
+### Expression Standards
 
-**示例1（跨平台关联+条件筛选）**：
+Use **goal-oriented** rather than path-oriented expressions:
 
-> 我计划和家人搬到德克萨斯州圣安东尼奥。先在Zillow上找5栋在售、价格25-40万美元的独栋住宅，然后去GreatSchools查这5栋对应学区的小学评分，只保留评分8分以上的。输出每栋房屋的：Zillow链接、地址、要价、对应小学名称、小学评分、GreatSchools链接。
+| Expression Type | Wrong Example | Right Example |
+|----------------|--------------|---------------|
+| Operation description | "Click favorite button to open popup then check" | "Save to your Study Materials collection" |
+| Content search | "Scroll comment section to load 20 comments" | "See what everyone is discussing in comments" |
 
-**分析**：
-- 核心网站明确：Zillow + GreatSchools
-- WHERE条件：价格25-40万、学校评分≥8
-- **WHERE验证字段**：要价、小学评分（输出中包含，便于验证筛选条件）
-- SELECT字段完整：房屋信息 + 学校信息 + 双平台链接
+## User Instruction Writing Standards
 
-**示例2（隐含触发+二次筛选）**：
+### Style Requirements
 
-> 我在找旧金山的数据科学家工作，想综合职位信息和公司口碑做决策。先在LinkedIn上搜索"Data Scientist"职位，地点选旧金山，找出5个薪资范围最高且支持Easy Apply的职位，记下职位名称、公司名和薪资范围。然后去Glassdoor查这5家公司的整体评分和工作生活平衡评分，只保留Glassdoor整体评分4.0以上的公司。提供每个职位的LinkedIn链接、职位名、公司名、薪资范围、是否支持Easy Apply，以及该公司的Glassdoor整体评分、工作生活平衡评分和Glassdoor公司页面链接。
+| Element | Requirement |
+|---------|-------------|
+| Person | First person ("I want...", "Help me...") |
+| Tone | Natural conversational, like real user talking to AI assistant |
+| Length | 100-250 words |
+| Key points | Include expressions that implicitly trigger complex operations/perceptions, maintain factual reasonableness |
 
-**分析**：
-- "支持Easy Apply"：隐含触发状态识别（非显式要求"识别标签"）
-- "薪资范围最高的5个"：隐含触发翻页浏览和排序
-- "Glassdoor整体评分4.0以上"：明确的二次筛选WHERE条件
-- 跨网站JOIN：LinkedIn公司名 → Glassdoor公司评价
-- SELECT字段完整：职位信息 + 公司评分 + 双平台链接
+### Expression Clarity Requirements
 
-**示例3（规则驱动的行程规划）**：
+| Element | Requirement | Example |
+|---------|-------------|---------|
+| Task boundaries | Clarify what to do and what not to do | "Select two sessions—one morning, one afternoon" |
+| Output format | Explain what information each item needs | "Provide departure time, ticket price, trip duration" |
+| Special cases | Preset possible situations and handling methods | "If not yet announced, please clearly state" |
+| Verification requirements | Explain how to verify results | "Provide direct link to official website search results page" |
+| Fallback instructions | Preset output when not found | "If not found, explain reason and recommend alternatives" |
 
-> 我计划这个周末在洛杉矶参加一些艺术活动，想安排一个充实但不紧张的行程。先去Getty官网看看本周末有什么展览或活动（讲座、工作坊、导览都行），选一个感兴趣的记下来。然后去Eventbrite搜索洛杉矶本周六日的艺术类活动，在Art、Museums或Culture分类下找2-3个评价不错的活动。把Getty的活动和Eventbrite找到的活动按时间顺序排列，用Google Maps逐一计算相邻活动地点之间的驾车时间。帮我筛选出一个可行的组合：要求每个活动之间必须留出足够时间（上一个活动结束时间+交通时间+至少30分钟缓冲≤下一个活动开始时间），最终保留3-4个时间不冲突的活动。输出每个活动的：名称、开始时间、结束时间（或持续时长）、地点地址、活动简介、活动页面链接；以及相邻活动之间的：Google Maps路线链接、驾车距离、预计交通时间。
+### Output Requirements Specification
 
-**分析**：
-- 规则明确：时间约束（上一个结束+交通+30分钟缓冲≤下一个开始）
-- 信息流清晰：Getty活动→Eventbrite活动→Google Maps验证可行性
-- 执行复杂：AI必须逐一计算时间和交通，无法走捷径
-- 输出完整且统一放在末尾
+**Output requirements uniformly placed at end of task description**, following three-layer structure:
 
-### 负面示例
+| Layer | Description | Necessity |
+|-------|-------------|-----------|
+| User value fields | Core information users actually need | Required |
+| WHERE verification fields | Numerical/status fields involved in filter conditions | Required (needed for eval) |
+| URL verification fields | Direct links to corresponding pages | Required (hallucination prevention) |
 
-**示例1（暴露UI操作）**：
-> 帮我在LinkedIn上点击翻页按钮加载更多职位，然后识别每个职位卡片上的Easy Apply标签状态...
+**⚠️ Mandatory requirements**:
+- **Do NOT scatter output items after each website operation in task description**
+- All output requirements **must be unified at the end of task description**
+- Intermediate steps only describe operation goals, do not list "note XX, provide YY"
 
-**问题**：显式要求UI操作，暴露测试意图，应改为目标导向表述。
+**Rewrite example**:
+- [WRONG] First go to Goodreads to find books, **note title, author and ISBN**. Then go to StoryGraph to check mood tags, **note tag distribution**. Finally go to Amazon to check prices, **provide price and link**.
+- [RIGHT] First go to Goodreads to find 5 contemporary literature new books published after September 2024 with rating above 4.2. Then go to StoryGraph to check mood tag distribution and pace evaluation for each book, filter those with emotional/reflective占比 over 60%. Finally check wholesale prices on Amazon. **Output: book title, author, ISBN, Goodreads rating, StoryGraph mood tag percentages, Amazon wholesale price, detail page links for each platform.**
 
-**示例2（存在性判断）**：
-> 去Coursera找Google的UX Design证书课程，确认一下它是否包含"构建线框图"模块...
+### Positive Examples
 
-**问题**：存在性判断只产生是/否结果，信息量低。应改为条件查询："找5个UX Design课程，评分4.5以上，列出各自的核心模块和链接"。
+**Example 1 (Cross-platform association + conditional filtering)**:
 
-**示例3（无兜底的极值查询）**：
-> 在Coursera上找学员数最多的5门数据分析课程...
+> I'm planning to move with my family to San Antonio, Texas. First find 5 single-family homes for sale on Zillow priced $250-400K, then check elementary school ratings for these 5 properties' school districts on GreatSchools, keeping only those with ratings 8 or above. Output for each property: Zillow link, address, asking price, corresponding elementary school name, elementary school rating, GreatSchools link.
 
-**问题**：依赖"学员数最多"排序，但Coursera可能不支持此排序。应改为范围筛选：
-> 在Coursera上找5门数据分析课程，评分4.5以上、时长在10-30小时之间...
+**Analysis**:
+- Core websites明确: Zillow + GreatSchools
+- WHERE conditions: Price $250-400K, school rating ≥ 8
+- **WHERE verification fields**: Asking price, elementary school rating (included in output for verifying filter conditions)
+- SELECT fields complete: Property info + school info + dual-platform links
 
-**示例4（绝对时间表述）**：
-> 我计划2026年6月20日在Discovery Park举办户外活动...
+**Example 2 (Implicit triggering + secondary filtering)**:
 
-**问题**：绝对日期会导致任务随时间失效。应改为相对时间：
-> 我计划下个月中旬的某个周六在Discovery Park举办户外活动...
+> I'm looking for Data Scientist jobs in San Francisco and want to make decisions based on both job information and company reputation. First search for "Data Scientist" positions on LinkedIn, select San Francisco location, find 5 positions with highest salary ranges supporting Easy Apply, note position title, company name and salary range. Then check overall ratings and work-life balance scores for these 5 companies on Glassdoor, keeping only companies with Glassdoor overall rating above 4.0. Provide LinkedIn link, position title, company name, salary range, whether Easy Apply is supported for each position, plus the company's Glassdoor overall rating, work-life balance score and Glassdoor company page link.
 
-## 验证方案设计
+**Analysis**:
+- "Supporting Easy Apply": Implicitly triggers state recognition (not explicitly requiring "recognize label")
+- "5 positions with highest salary ranges": Implicitly triggers pagination browsing and sorting
+- "Glassdoor overall rating above 4.0": Clear secondary filtering WHERE condition
+- Cross-site JOIN: LinkedIn company name → Glassdoor company evaluation
+- SELECT fields complete: Job info + company ratings + dual-platform links
 
-### 广义SQL视角下的评估逻辑
+**Example 3 (Rule-driven itinerary planning)**:
 
-评估的本质是：根据"广义SQL执行器"返回的"查询结果"（文本形式），判断执行效果。
+> I plan to attend some art activities in Los Angeles this weekend and want to arrange a fulfilling but not rushed itinerary. First check Getty's official website for exhibitions or events this weekend (lectures, workshops, guided tours are all fine), select one of interest and note it down. Then search for art activities in Los Angeles this Saturday-Sunday on Eventbrite, find 2-3 well-reviewed activities under Art, Museums or Culture categories. Arrange Getty's activity and Eventbrite-found activities in chronological order, use Google Maps to calculate driving times between adjacent activity locations one by one. Help me filter a feasible combination: requiring sufficient time between each activity (previous activity end time + travel time + at least 30 minutes buffer ≤ next activity start time), finally retaining 3-4 non-conflicting activities. Output for each activity: name, start time, end time (or duration), location address, activity brief, activity page link; and between adjacent activities: Google Maps route link, driving distance, estimated travel time.
 
-| 复杂项类型 | 验证方法 |
-|-----------|---------|
-| WHERE相关 | 检查输出中被作为筛选条件的字段是否满足WHERE要求 |
-| SELECT相关 | 检查是否输出了要求的字段、格式类型是否正确、内容是否合理 |
-| 防幻觉 | 用LLM Judge执行"广义验证SQL"，拿URL去验证是否如所声称 |
+**Analysis**:
+- Rules clear: Time constraints (previous end + travel + 30 min buffer ≤ next start)
+- Information flow clear: Getty activity → Eventbrite activity → Google Maps feasibility verification
+- Complex execution: AI must calculate times and travel one by one, cannot take shortcuts
+- Output complete and unified at end
 
-**源字段类型与验证**：
+### Negative Examples
 
-| 源字段类型 | 提取方式 | 验证方式 |
-|-----------|---------|---------|
-| 数值/文本 | HTML直接提取 | WHERE条件直接验证数值/文本是否满足 |
+**Example 1 (Exposing UI operations)**:
+> Help me click the pagination button on LinkedIn to load more positions, then identify the Easy Apply label status on each position card...
 
-### 任务构造对评估的支撑
+**Problem**: Explicitly requires UI operations, exposes testing intent, should change to goal-oriented expression.
 
-任务构造时须确保：
-1. **WHERE验证字段必须输出**：筛选条件中用到的字段必须作为输出项，否则无法验证WHERE是否正确执行
-2. **关键URL必须输出**：用于LLM Judge防幻觉验证
+**Example 2 (Existence check)**:
+> Go to Coursera to find Google's UX Design certificate course, confirm whether it includes "Building Wireframes" module...
 
-### 验证与输出的对应原则
+**Problem**: Existence checks produce only yes/no results with low information content. Should change to conditional query: "Find 5 UX Design courses with rating above 4.5, list their core modules and links".
 
-| 任务要求类型 | 输出形式 | 验证方式 |
-|-------------|---------|---------|
-| 数值型筛选（价格、评分） | 具体数值 | 检查数值是否满足WHERE条件 |
-| 文本型筛选（标签、类别） | 文本内容 | 检查文本是否匹配筛选要求 |
-| 规则约束（距离间隔） | 每项具体数值 | 检查每项是否满足约束条件 |
-| 结果数量要求 | 列表 | 检查数量是否达标 |
+**Example 3 (Superlative query without fallback)**:
+> Find the 5 data analysis courses with most students on Coursera...
 
-**关键原则**：
-- 所有输出最终应转化为**可验证的文本或URL**
-- URL是防幻觉验证的关键手段
-- 规则驱动任务应输出足够信息以验证规则是否满足
+**Problem**: Relies on "most students" sorting, but Coursera may not support this sorting. Should change to range filtering:
+> Find 5 data analysis courses on Coursera with rating above 4.5 and duration between 10-30 hours...
 
-## 输出格式
+**Example 4 (Absolute time expression)**:
+> I plan to hold outdoor activities at Discovery Park on June 20, 2026...
+
+**Problem**: Absolute dates cause tasks to become invalid over time. Should change to relative time:
+> I plan to hold outdoor activities at Discovery Park on a Saturday in mid-next month...
+
+## Verification Scheme Design
+
+### Evaluation Logic from Generalized SQL Perspective
+
+The essence of evaluation is: Based on the "query results" (in text form) returned by the "generalized SQL executor", judge execution effectiveness.
+
+| Complexity Type | Verification Method |
+|----------------|-------------------|
+| WHERE-related | Check if output fields used as filter conditions satisfy WHERE requirements |
+| SELECT-related | Check if required fields are output, format types correct, content reasonable |
+| Hallucination prevention | Use LLM Judge to execute "generalized validation SQL", take URLs to verify claims |
+
+**Source field types and verification**:
+
+| Source Field Type | Extraction Method | Verification Method |
+|------------------|------------------|-------------------|
+| Numerical/text | Direct HTML extraction | Directly verify if numerical/text satisfies WHERE conditions |
+
+### Task Construction Support for Evaluation
+
+Task construction must ensure:
+1. **WHERE verification fields must be output**: Fields used in filter conditions must be output items, otherwise cannot verify WHERE execution correctness
+2. **Key URLs must be output**: Used for LLM Judge hallucination prevention verification
+
+### Correspondence Principle between Verification and Output
+
+| Task Requirement Type | Output Form | Verification Method |
+|---------------------|-------------|-------------------|
+| Numerical filtering (price, rating) | Specific values | Check if values satisfy WHERE conditions |
+| Text filtering (tags, categories) | Text content | Check if text matches filtering requirements |
+| Rule constraints (distance intervals) | Specific value for each item | Check if each item satisfies constraint conditions |
+| Result quantity requirements | List | Check if quantity meets requirement |
+
+**Key principles**:
+- All outputs should ultimately transform into **verifiable text or URLs**
+- URLs are key means for hallucination prevention verification
+- Rule-driven tasks should output sufficient information to verify rule satisfaction
+
+## Output Format
 ```json
 {
   "task_id": "TASK-XXX",
   "source_proposal": "PROP-XXX",
-  "task_description": "完整的用户指令，100-250字，自然口语化，不含换行符",
-  "information_flow_summary": "简述信息如何从第一个网站流向最后一个网站",
+  "task_description": "Complete user instruction, 100-250 words, natural conversational, no line breaks",
+  "information_flow_summary": "Briefly describe how information flows from first website to last website",
   
   "core_outputs": [
     {
       "id": "o1",
-      "name": "输出项名称",
+      "name": "Output item name",
       "type": "text|number|boolean|url|list",
-      "source": "来自哪个网站",
-      "description": "该输出的具体说明",
+      "source": "Which website it comes from",
+      "description": "Specific description of this output",
       "output_role": "user_value|where_verification|url_verification"
     },
     {
       "id": "o2",
-      "name": "另一个输出项",
+      "name": "Another output item",
       ...
     }
   ],
@@ -444,20 +511,20 @@
   "covered_points": [
     {
       "point_id": "semanticscholar.org:F1:A3",
-      "ability_type": "日期范围筛选",
-      "trigger_method": "通过'搜索2023年以来发表的'隐含触发",
+      "ability_type": "Date range filtering",
+      "trigger_method": "Implicitly triggered through 'search for papers published since 2023'",
       "verification": {
         "output_ref": "o2",
-        "verify_method": "检查o2（发表年份）是否>=2023"
+        "verify_method": "Check if o2 (publication year) >= 2023"
       }
     },
     {
       "point_id": "youtube.com:F5:A30",
-      "ability_type": "展开折叠",
-      "trigger_method": "通过'查看视频描述确认是否提到论文或作者'隐含触发（描述默认折叠需展开）",
+      "ability_type": "Expand/collapse",
+      "trigger_method": "Implicitly triggered through 'check video description to confirm if it mentions the paper or author' (description collapsed by default requires expansion)",
       "verification": {
         "output_ref": "o9",
-        "verify_method": "检查o9是否包含视频描述摘要，以及是否包含论文标题或作者名"
+        "verify_method": "Check if o9 contains video description summary, and whether it includes paper title or author name"
       }
     }
   ],
@@ -465,344 +532,345 @@
   "uncovered_points": [
     {
       "point_id": "linkedin.com:F3:A27",
-      "reason": "分享功能与本任务主线无关，强行加入会破坏自然性"
+      "reason": "Share function unrelated to task主线, forcing inclusion would破坏 naturalness"
     }
   ],
   
-  "deep_research_differentiation": "说明本任务必须依赖的视觉/操作能力，以及为何纯搜索+LLM无法完成",
+  "deep_research_differentiation": "Explain visual/operational capabilities this task must rely on, and why pure search + LLM cannot complete it",
   
   "cross_site_necessity_check": {
-    "skip_test_result": "说明如果跳过某个网站会怎样",
-    "unique_info_dependency": "说明任务依赖哪个网站的什么独有信息",
-    "information_handoff_points": ["信息传递节点，如'LinkedIn公司名→Indeed对比验证'"]
+    "skip_test_result": "Explain what happens if skipping a certain website",
+    "unique_info_dependency": "Explain what unique information from which website the task depends on",
+    "information_handoff_points": ["Information transfer nodes, e.g., 'LinkedIn company name → Indeed comparison verification'"]
   },
   
   "factual_reliability_check": {
-    "verified_elements": ["已确认存在的要素"],
-    "dynamic_elements": ["可能变化的要素"],
-    "fallback_strategies": ["任务中内置的容错策略"]
+    "verified_elements": ["Confirmed existing elements"],
+    "dynamic_elements": ["Elements that may change"],
+    "fallback_strategies": ["Built-in fault tolerance strategies in task"]
   },
   
   "groundtruth": [
     {
-      "checkpoint": "检查点描述",
+      "checkpoint": "Checkpoint description",
       "verification_type": "visual_match|data_extraction|state_change|content_coverage|path_completion|judgment_quality",
-      "verification_method": "具体验证方法，包括如何处理动态内容",
-      "expected_result": "通过标准",
+      "verification_method": "Specific verification method, including how to handle dynamic content",
+      "expected_result": "Pass criteria",
       "is_required": true
     }
   ],
   
   "edge_cases": {
-    "content_not_found": "找不到符合条件内容时的处理方式",
-    "dynamic_content": "动态内容的处理方式"
+    "content_not_found": "Handling method when content meeting conditions not found",
+    "dynamic_content": "Handling method for dynamic content"
   },
   
   "metadata": {
-    "clusters_used": ["功能集团1", "功能集团2"],
+    "clusters_used": ["functional cluster 1", "functional cluster 2"],
     "websites_involved": ["xxx.com", "yyy.com"],
-    "official_websites": ["品牌官网1", "公司官网2"],
+    "official_websites": ["brand official site 1", "company official site 2"],
     "function_points_from_proposal": ["xxx.com:F1", "xxx.com:F2", "yyy.com:F1"],
     "function_points_used": ["xxx.com:F1", "yyy.com:F1"],
     "action_points_used": ["xxx.com:F1:A3", "yyy.com:F1:A8"],
     "perception_points_used": ["xxx.com:F1:P2", "yyy.com:F1:P9"],
-    "cluster_count": "功能集团数量",
-    "website_count": "网站总数（核心+附加官网）",
-    "core_website_count": "核心网站数量",
-    "official_website_count": "附加官网类网站数量",
-    "function_point_count": "function_points_used的数量",
-    "action_point_count": "action_points_used的数量（目标≥5）",
-    "perception_point_count": "perception_points_used的数量（目标≥4）",
-    "cross_site_handoffs": "跨网站信息传递次数（目标≥2）",
-    "complexity_density": "复杂点总数/核心网站数（目标≥2.0）",
-    "estimated_time_minutes": "预估完成时间（分钟）",
-    "test_barriers": "无|需登录|需付费|地区限制",
-    "is_rule_driven_planning": "是否为规则驱动的复杂规划任务"
+    "cluster_count": "Number of functional clusters",
+    "website_count": "Total website count (core + additional official sites)",
+    "core_website_count": "Number of core websites",
+    "official_website_count": "Number of additional official websites",
+    "function_point_count": "Count of function_points_used",
+    "action_point_count": "Count of action_points_used (target ≥ 5)",
+    "perception_point_count": "Count of perception_points_used (target ≥ 4)",
+    "cross_site_handoffs": "Number of cross-site information transfers (target ≥ 2)",
+    "complexity_density": "Total complex points / core website count (target ≥ 2.0)",
+    "estimated_time_minutes": "Estimated completion time (minutes)",
+    "test_barriers": "None|Login required|Payment required|Regional restrictions",
+    "is_rule_driven_planning": "Whether it's a rule-driven complex planning task"
   }
 }
 ```
 
-### 关键格式约束
+### Key Format Constraints
 
-**point_id格式**：
-- 必须精确到操作点(A)或感知点(P)：`website.com:Fx:Ay`或`website.com:Fx:Pz`
-- ❌ 错误：`allrecipes.com:F3`（只到功能点）
-- ✓ 正确：`allrecipes.com:F3:A5`
+**point_id format**:
+- Must be precise to operation point (A) or perception point (P): `website.com:Fx:Ay` or `website.com:Fx:Pz`
+- [WRONG] Error: `allrecipes.com:F3` (only to function point)
+- [RIGHT] Correct: `allrecipes.com:F3:A5`
 
-**数量一致性**：
-- `covered_points`元素个数 = `action_point_count` + `perception_point_count`
-- `action_points_used`和`perception_points_used`中每个点都必须在`covered_points`中有对应条目
+**Quantity consistency**:
+- Number of `covered_points` elements = `action_point_count` + `perception_point_count`
+- Each point in `action_points_used` and `perception_points_used` must have corresponding entry in `covered_points`
 
-**trigger_method格式**：
+**trigger_method format**:
 ```
-通过'[任务描述中的原文片段]'隐含触发
+Implicitly triggered through '[original text fragment from task description]'
 ```
 
-### 完整示例
+### Complete Example
 ```json
 {
   "core_outputs": [
-    {"id": "o1", "name": "论文标题", "type": "text", "source": "semanticscholar.org", "output_role": "user_value"},
-    {"id": "o2", "name": "发表年份", "type": "number", "source": "semanticscholar.org", "output_role": "where_verification"},
-    {"id": "o3", "name": "引用次数", "type": "number", "source": "semanticscholar.org", "output_role": "where_verification"},
-    {"id": "o4", "name": "是否有PDF", "type": "boolean", "source": "semanticscholar.org", "output_role": "where_verification"},
-    {"id": "o5", "name": "Semantic Scholar链接", "type": "url", "source": "semanticscholar.org", "output_role": "url_verification"},
-    {"id": "o6", "name": "YouTube视频标题", "type": "text", "source": "youtube.com", "output_role": "user_value"},
-    {"id": "o7", "name": "视频观看次数", "type": "number", "source": "youtube.com", "output_role": "where_verification"},
-    {"id": "o8", "name": "视频链接", "type": "url", "source": "youtube.com", "output_role": "url_verification"},
-    {"id": "o9", "name": "视频描述摘要", "type": "text", "source": "youtube.com", "output_role": "where_verification"}
+    {"id": "o1", "name": "Paper title", "type": "text", "source": "semanticscholar.org", "output_role": "user_value"},
+    {"id": "o2", "name": "Publication year", "type": "number", "source": "semanticscholar.org", "output_role": "where_verification"},
+    {"id": "o3", "name": "Citation count", "type": "number", "source": "semanticscholar.org", "output_role": "where_verification"},
+    {"id": "o4", "name": "Has PDF", "type": "boolean", "source": "semanticscholar.org", "output_role": "where_verification"},
+    {"id": "o5", "name": "Semantic Scholar link", "type": "url", "source": "semanticscholar.org", "output_role": "url_verification"},
+    {"id": "o6", "name": "YouTube video title", "type": "text", "source": "youtube.com", "output_role": "user_value"},
+    {"id": "o7", "name": "Video view count", "type": "number", "source": "youtube.com", "output_role": "where_verification"},
+    {"id": "o8", "name": "Video link", "type": "url", "source": "youtube.com", "output_role": "url_verification"},
+    {"id": "o9", "name": "Video description summary", "type": "text", "source": "youtube.com", "output_role": "where_verification"}
   ],
   
   "covered_points": [
     {
       "point_id": "semanticscholar.org:F1:A3",
-      "ability_type": "日期范围筛选",
-      "trigger_method": "通过'搜索2023年以来发表的'隐含触发",
-      "verification": {"output_ref": "o2", "verify_method": "检查o2>=2023"}
+      "ability_type": "Date range filtering",
+      "trigger_method": "Implicitly triggered through 'search for papers published since 2023'",
+      "verification": {"output_ref": "o2", "verify_method": "Check o2 >= 2023"}
     },
     {
       "point_id": "semanticscholar.org:F1:A4",
-      "ability_type": "排序操作",
-      "trigger_method": "通过'引用量排名前列'隐含触发",
-      "verification": {"output_ref": "o3", "verify_method": "检查o3数值较高(如>100)"}
+      "ability_type": "Sorting operation",
+      "trigger_method": "Implicitly triggered through 'high citation ranking'",
+      "verification": {"output_ref": "o3", "verify_method": "Check o3 value relatively high (e.g., > 100)"}
     },
     {
       "point_id": "semanticscholar.org:F1:P2",
-      "ability_type": "状态感知",
-      "trigger_method": "通过'必须带有PDF下载链接'隐含触发",
-      "verification": {"output_ref": "o4", "verify_method": "检查o4==true"}
+      "ability_type": "State perception",
+      "trigger_method": "Implicitly triggered through 'must have PDF download link'",
+      "verification": {"output_ref": "o4", "verify_method": "Check o4 == true"}
     },
     {
       "point_id": "youtube.com:F1:P4",
-      "ability_type": "内容匹配",
-      "trigger_method": "通过'找到对应的演示视频'隐含触发",
-      "verification": {"output_ref": "o6", "verify_method": "检查o6与o1的相关性"}
+      "ability_type": "Content matching",
+      "trigger_method": "Implicitly triggered through 'find corresponding demo video'",
+      "verification": {"output_ref": "o6", "verify_method": "Check relevance between o6 and o1"}
     },
     {
       "point_id": "youtube.com:F5:A30",
-      "ability_type": "展开折叠",
-      "trigger_method": "通过'查看视频描述确认是否提到论文或作者'隐含触发",
-      "verification": {"output_ref": "o9", "verify_method": "检查o9是否存在且包含论文/作者相关信息"}
+      "ability_type": "Expand/collapse",
+      "trigger_method": "Implicitly triggered through 'check video description to confirm if it mentions paper or author'",
+      "verification": {"output_ref": "o9", "verify_method": "Check if o9 exists and contains paper/author related information"}
     },
     {
       "point_id": "youtube.com:F1:P7",
-      "ability_type": "数据感知",
-      "trigger_method": "通过'视频观看量需超过500次'隐含触发",
-      "verification": {"output_ref": "o7", "verify_method": "检查o7>500"}
+      "ability_type": "Data perception",
+      "trigger_method": "Implicitly triggered through 'video views must exceed 500'",
+      "verification": {"output_ref": "o7", "verify_method": "Check o7 > 500"}
     }
   ]
 }
 ```
 
-### 字段说明
+### Field Descriptions
 
-**core_outputs字段**：
+**core_outputs fields**:
 
-| 字段 | 类型 | 说明 |
-|-----|------|------|
-| id | String | 输出项唯一标识(o1, o2...) |
-| name | String | 输出项名称 |
-| type | String | text\|number\|boolean\|url\|list |
-| source | String | 来自哪个网站 |
-| description | String | 该输出的具体说明 |
-| output_role | String | user_value\|where_verification\|url_verification |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | String | Output item unique identifier (o1, o2...) |
+| name | String | Output item name |
+| type | String | text|number|boolean|url|list |
+| source | String | Which website it comes from |
+| description | String | Specific description of this output |
+| output_role | String | user_value|where_verification|url_verification |
 
-**covered_points字段**：
+**covered_points fields**:
 
-| 字段 | 类型 | 说明 |
-|-----|------|------|
-| point_id | String | 能力点ID(website.com:Fx:Ay或Pz) |
-| ability_type | String | 能力类型描述 |
-| trigger_method | String | 任务描述中触发该能力点的原文片段 |
-| verification.output_ref | String | 对应的core_output id |
-| verification.verify_method | String | 无GT情况下的验证方法 |
+| Field | Type | Description |
+|-------|------|-------------|
+| point_id | String | Capability point ID (website.com:Fx:Ay or Pz) |
+| ability_type | String | Ability type description |
+| trigger_method | String | Original text fragment in task description triggering this capability point |
+| verification.output_ref | String | Corresponding core_output id |
+| verification.verify_method | String | Verification method without GT |
 
-**groundtruth字段**：
+**groundtruth fields**:
 
-| 字段 | 类型 | 说明 |
-|-----|------|------|
-| checkpoint | String | 检查点描述 |
-| gt_availability | String | full(完整GT)\|partial(部分GT)\|none(无GT) |
-| verification_method | String | 有GT时匹配方法，或无GT时验证逻辑 |
-| expected_result | String | 通过标准 |
-| is_required | Boolean | 是否为必须通过的检查点 |
+| Field | Type | Description |
+|-------|------|-------------|
+| checkpoint | String | Checkpoint description |
+| gt_availability | String | full (complete GT)|partial (partial GT)|none (no GT) |
+| verification_method | String | Matching method with GT, or verification logic without GT |
+| expected_result | String | Pass criteria |
+| is_required | Boolean | Whether it's a mandatory checkpoint |
 
-### covered_points逻辑约束
+### covered_points Logical Constraints
 
-**核心原则：trigger_method必须是强逻辑，不能是推测或间接关联**
+**Core principle: trigger_method must be strong logic, not speculation or indirect association**
 
-| 逻辑类型 | 示例 | 是否允许 |
-|---------|------|---------|
-| 强逻辑 | "通过'筛选卖家信誉4.8以上'隐含触发悬停查看卖家信息" | ✓ |
-| 弱逻辑/推测 | "通过'对比批发价格'隐含触发，需悬停卖家名称查看卖家信誉以评估采购风险" | ✗ |
+| Logic Type | Example | Allowed |
+|-----------|---------|---------|
+| Strong logic | "Implicitly triggered through 'filter sellers with reputation above 4.8' to hover and view seller info" | ✓ |
+| Weak logic/speculation | "Implicitly triggered through 'compare wholesale prices', need to hover seller name to view seller reputation to assess procurement risk" | ✗ |
 
-**判断方法**：
-1. 任务描述中是否**明确要求**输出该能力点产生的信息？
-2. 如果不执行该能力点，任务是否**必然失败**？
-3. 该能力点与trigger_method之间是否有**直接因果关系**？
+**Judgment methods**:
+1. Does task description **explicitly require** outputting information produced by this capability point?
+2. If this capability point is not executed, will the task **inevitably fail**?
+3. Is there a **direct causal relationship** between this capability point and trigger_method?
 
-**处理方式**：
-- 如果想覆盖某个能力点，**必须在任务描述中增加对应的输出要求**
-- 如果无法自然增加输出要求，则**放弃覆盖该能力点**
-- 禁止使用"需要XX以便YY"这种推测性的trigger_method
+**Handling methods**:
+- If wanting to cover a capability point, **must add corresponding output requirements in task description**
+- If unable to naturally add output requirements, then **abandon covering that capability point**
+- Prohibit using speculative trigger_methods like "need XX in order to YY"
 
-**示例修正**：
-- ❌ trigger_method: "通过'对比批发价格'隐含触发，需悬停卖家名称查看卖家信誉以评估采购风险"
-- ✓ 方案A：在任务描述中增加"筛选卖家信誉4.8以上的商品，输出卖家名称和信誉评分"
-- ✓ 方案B：删除该covered_point，因为任务未要求卖家信息
+**Example corrections**:
+- [WRONG] trigger_method: "Implicitly triggered through 'compare wholesale prices', need to hover seller name to view seller reputation to assess procurement risk"
+- [RIGHT] Option A: Add "filter products from sellers with reputation above 4.8, output seller name and reputation score" to task description
+- [RIGHT] Option B: Delete this covered_point, because task doesn't require seller information
 
-## 自检清单
+## Self-Check Checklist
 
-### 跨网站必要性
-- [ ] 跳过任何一个网站是否会导致任务无法完成？
-- [ ] information_flow_summary是否清晰描述了信息链？
-- [ ] cross_site_necessity_check是否完整填写？
-- 一个自然、合理的单网站任务，优于一个牵强的双网站任务
-- 一个自然、合理的双网站任务，优于一个刻意串联的三网站任务
-- 如果跨网站让任务变得不自然，宁可减少网站数量
+### Cross-Site Necessity
+- [ ] Would skipping any website make the task impossible to complete?
+- [ ] Does information_flow_summary clearly describe the information chain?
+- [ ] Is cross_site_necessity_check completely filled?
+- A natural, reasonable single-site task is better than a contrived two-site task
+- A natural, reasonable two-site task is better than a deliberately chained three-site task
+- If cross-site makes the task feel unnatural, prefer fewer sites
 
-不要为了"跨网站"而跨网站。跨网站只是手段，不是目的。
+Do not cross sites just for the sake of crossing sites. Cross-site is a means, not an end.
 
-### 信息流真实性（最高优先级，不通过则直接否决）
-- [ ] 传递物是否是**具体实体**（人名、作品名、数值），而非主题关键词？
-- [ ] 传递物是否是**动态获取**的，而非任务开头预设的？
-- [ ] 任务中是否有"假设""假定"等词连接不同网站？（若有，直接否决）
-- [ ] **跳过测试**：跳过网站A后，是否仍知道在网站B搜什么？（若是，直接否决）
-- [ ] 每个core_output是否和任务其他部分有逻辑关联？（若无，直接否决）
-- [ ] 任务描述中是否明确了每个步骤要找的**数量**？（如"找5篇论文"而非"找论文"）
+### Information Flow Authenticity (Highest priority, reject if fails)
+- [ ] Are transfer objects **specific entities** (names, work titles, values), not theme keywords?
+- [ ] Are transfer objects **dynamically obtained**, not preset at task start?
+- [ ] Does task use words like "assume", "suppose" to connect different websites? (If yes, directly reject)
+- [ ] **Skip test**: After skipping website A, do you still know what to search on website B? (If yes, directly reject)
+- [ ] Does each core_output have logical connection with other parts of task? (If no, directly reject)
+- [ ] Does task description clarify **quantities** to find at each step? (e.g., "find 5 papers" not "find papers")
 
-### 核心输出（广义SQL SELECT）
-- [ ] 每个输出是否具体、可验证？
-- [ ] **每个WHERE条件是否都有对应的输出验证字段**？
-- [ ] **输出要求是否统一放在任务描述末尾**？
-- [ ] **是否包含URL字段用于防幻觉验证**？
+### Core Outputs (Generalized SQL SELECT)
+- [ ] Is each output specific and verifiable?
+- [ ] **Does each WHERE condition have corresponding output verification field**?
+- [ ] **Are output requirements unified at end of task description**?
+- [ ] **Does it include URL fields for hallucination prevention**?
 
-### 输出与能力点映射
-- [ ] **每个covered_point是否都有verification.output_ref指向某个core_output**？
-- [ ] **每个covered_point的verify_method是否说明了无GT验证逻辑**？
-- [ ] **是否存在被触发但无法通过输出验证的能力点**？若有，需补充对应输出项
-- [ ] **task_description中是否包含了所有core_outputs对应的输出要求**？
+### Output and Capability Point Mapping
+- [ ] **Does each covered_point have verification.output_ref pointing to some core_output**?
+- [ ] **Does each covered_point's verify_method explain no-GT verification logic**?
+- [ ] **Are there capability points triggered but unverifiable through outputs**? If yes, need to add corresponding output items
+- [ ] **Does task_description include output requirements for all core_outputs**?
 
-### 事实合理性
-- [ ] 关键要素是否有可靠的存在依据？
-- [ ] 已确认存在的要素是否使用了足够具体的描述？
-- [ ] 动态内容是否有容错策略？
-- [ ] **是否避免了依赖不确定的排序/筛选功能？**
-- [ ] **时间表述是否使用相对时间，避免绝对日期？**
-- [ ] **时间相关任务是否有时间窗口过期的容错？**
+### Factual Reasonableness
+- [ ] Do key elements have reliable existence basis?
+- [ ] Are confirmed existing elements described with sufficient specificity?
+- [ ] Do dynamic contents have fault tolerance strategies?
+- [ ] **Is reliance on uncertain sorting/filtering functions avoided**?
+- [ ] **Do time expressions use relative time, avoiding absolute dates**?
+- [ ] **Do time-related tasks have time window expiration fault tolerance**?
 
-### Benchmark定位
-- [ ] 任务是否无法仅通过搜索引擎+LLM完成？
-- [ ] 任务终点是否为具体对象或操作，而非分析报告？
+### Benchmark Positioning
+- [ ] Can the task NOT be completed solely through search engine + LLM?
+- [ ] Is task endpoint a specific object or operation, not an analysis report?
 
-### 复杂度达标
+### Complexity Compliance
 - [ ] action_points_used ≥ 5
 - [ ] perception_points_used ≥ 4
-- [ ] 每个核心网站至少有1个操作点或感知点
+- [ ] Each core website has at least 1 operation or perception point
 - [ ] cross_site_handoffs ≥ 2
-- [ ] 所有复杂点通过隐含引导触发（非显式要求）
-- [ ] 官网类附加网站自然融入
-- [ ] 总网站数（核心+官网）≥ 3
+- [ ] All complex points triggered through implicit guidance (not explicit requirements)
+- [ ] Official website additions naturally integrated
+- [ ] Total websites (core + official) ≥ 3
 
-**未达标处理**：
-1. 在现有步骤中挖掘更多自然触发的复杂点
-2. 将"搜索→点击"扩展为"筛选→对比→选择"
-3. 增加"验证"或"确认"环节，引入状态感知
-4. 考虑增加官网类附加网站
-5. 考虑设计为规则驱动的复杂规划任务
+**Non-compliance handling**:
+1. Mine more naturally triggered complex points in existing steps
+2. Expand "search → click" to "filter → compare → select"
+3. Add "verify" or "confirm" steps, introducing state perception
+4. Consider adding official website additions
+5. Consider designing as rule-driven complex planning task
 
-### 自然性
-- [ ] 用户指令是否符合真实用户的表达习惯？
-- [ ] 是否避免了暴露"测试XX功能"的意图？
-- [ ] 操作/感知点是否通过目标描述自然触发？
+### Naturalness
+- [ ] Do user instructions conform to real user expression habits?
+- [ ] Is exposure of "testing XX function" intent avoided?
+- [ ] Are operation/perception points naturally triggered through goal descriptions?
 
-### 元数据格式
-- [ ] metadata中的统计指标是否准确？
-- [ ] **covered_points中每个point_id是否精确到A或P级别**？
-- [ ] **covered_points元素个数 = action_point_count + perception_point_count**？
+### Metadata Format
+- [ ] Are statistical indicators in metadata accurate?
+- [ ] **Is each point_id in covered_points precise to A or P level**?
+- [ ] **Does number of covered_points elements = action_point_count + perception_point_count**?
 
 
-### 五维质量检查（终审）
+### Five-Dimensional Quality Check (Final Review)
 
-在完成任务设计后，必须从以下五个维度进行最终检查：
+After completing task design, must conduct final check from these five dimensions:
 
-| 维度 | 检查问题 | 不通过则 |
-|-----|---------|---------|
-| **合理性** | 任务意图是否自然合理？跨网站逻辑是否连贯？功能使用是否牵强？ | 重新设计任务场景 |
-| **复杂性** | 对agent是否有挑战性？是否能仅靠搜索+LLM完成？ | 增加复杂操作/感知点 |
-| **可执行性** | 人工能否顺利执行并标注GT？网站功能是否可用？ | 调整任务或更换网站 |
-| **安全性** | 是否涉及政治、色情、暴力、歧视等敏感话题？ | 更换任务主题 |
-| **可评估性** | 输出是否可通过文本/URL验证？视觉类是否有GT支持？ | 调整输出要求或放弃视觉任务 |
+| Dimension | Check Questions | If Fails |
+|-----------|----------------|----------|
+| **Reasonableness** | Is task intent natural and reasonable? Is cross-site logic coherent? Is function usage forced? | Redesign task scenario |
+| **Complexity** | Is it challenging for agent? Can it be completed with just search + LLM? | Add complex operation/perception points |
+| **Executability** | Can humans smoothly execute and annotate GT? Are website functions usable? | Adjust task or change websites |
+| **Safety** | Does it involve sensitive topics like politics, pornography, violence, discrimination? | Change task theme |
+| **Evaluability** | Can outputs be verified through text/URL? Do visual tasks have GT support? | Adjust output requirements or abandon visual tasks |
 
-**建议**：在提交任务前，尝试自己按任务描述执行一遍，确认每个步骤都能顺利完成。
+**Recommendation**: Before submitting task, try executing it yourself according to task description, confirming each step can be smoothly completed.
 
-### 质量否决标准
+### Quality Rejection Criteria
 
-以下情况应**否决并重新设计**：
+The following situations should **reject and redesign**:
 
-| 否决条件 | 说明 |
-|---------|------|
-| 常识性错误 | 任务基于错误假设（如纯音乐有歌词） |
-| 无法验证 | 核心输出无法通过文本或URL验证 |
-| 复杂项严重不足 | action_points < 4 或 perception_points < 3 |
-| 网站不明确 | 使用"某平台""相关网站"等模糊表述 |
-| 大题小作 | 任务过于宏大，非单次会话可完成 |
-| 格式不规范 | point_id只到F级别，或数量不一致 |
-| WHERE字段缺失 | 筛选条件未作为输出字段，无法验证 |
-| 能力点无输出映射 | covered_point无法通过任何core_output验证 |
-| **信息流虚假** | 使用"假设"连接、预设关键词、主题并行无实体传递、存在孤立输出项 |
-| **无兜底的极值查询** | 依赖"最多""最火"等排序且无范围筛选替代 |
-| **绝对时间导致失效** | 使用固定日期导致任务随时间不可执行 |
+| Rejection Condition | Description |
+|--------------------|-------------|
+| Common sense errors | Task based on wrong assumptions (e.g., pure instrumental music has lyrics) |
+| Unverifiable | Core outputs cannot be verified through text or URLs |
+| Severely insufficient complexity | action_points < 4 or perception_points < 3 |
+| Unclear websites | Using vague expressions like "some platform", "related website" |
+| Overly ambitious | Task too grand, not completable in single session |
+| Non-standard format | point_id only to F level, or quantity inconsistency |
+| Missing WHERE fields | Filter conditions not output as fields, cannot verify |
+| Capability points without output mapping | covered_point cannot be verified through any core_output |
+| **False information flow** | Using "assume" connections, preset keywords, theme parallel without entity transfer, isolated output items |
+| **Superlative queries without fallback** | Relying on "most", "hottest" sorting without range filter alternatives |
+| **Absolute time causing invalidation** | Using fixed dates making task unexecutable over time |
 
-**处理流程**：
-1. 完善后先自检是否触发否决条件
-2. 触发否决条件的任务应退回重新提议或重新完善
-3. 边界情况可通过调整任务描述修复
+**Handling process**:
+1. Self-check after refinement whether rejection conditions triggered
+2. Tasks triggering rejection conditions should be returned for re-proposal or re-refinement
+3. Borderline cases can be fixed by adjusting task description
 
-### 时间表述规范
+### Time Expression Standards
 
-**核心原则**：使用相对时间表述，避免绝对日期，确保任务长期可执行。
+**Core principle**: Use relative time expressions, avoid absolute dates, ensure long-term task executability.
 
-| 表述类型 | 不推荐（❌） | 推荐（✓） |
-|---------|------------|----------|
-| 未来计划 | "2026年6月20日" | "下周六""这个月底""明年夏天" |
-| 活动/事件 | "2026年春季学期" | "下学期""即将到来的学期" |
-| 历史数据 | "2023年以来" | "近两年""过去12个月内" |
-| 周期性内容 | "2025年度报告" | "最新年度报告""上一财年报告" |
+| Expression Type | Not Recommended [WRONG] | Recommended [RIGHT] |
+|----------------|------------------------|-------------------|
+| Future plans | "June 20, 2026" | "Next Saturday", "end of this month", "next summer" |
+| Activities/events | "Spring 2026 semester" | "Next semester", "upcoming semester" |
+| Historical data | "Since 2023" | "Past two years", "within past 12 months" |
+| Periodic content | "2025 annual report" | "Latest annual report", "previous fiscal year report" |
 
-**时间周期与任务类型的合理匹配**：
+**Reasonable matching between time periods and task types**:
 
-不同类型的任务有其自然的时间周期，时间表述应与任务性质匹配：
+Different task types have their natural time cycles; time expressions should match task nature:
 
-| 任务类型 | 合理周期 | 示例 |
-|---------|---------|------|
-| 酒店/餐厅预订 | 几天~几周 | "下周末""这个月的某个周六" |
-| 机票/火车票 | 几周~2个月 | "下个月中旬""国庆假期前后" |
-| 活动/展览查询 | 当周~下月 | "这周末""下周""本月内" |
-| 课程/学期规划 | 当季~下季 | "下学期""秋季学期" |
-| 年度规划/采购 | 月末/季末/年末 | "年底前""Q4期间""月末" |
-| 旅行规划 | 1~3个月 | "暑假期间""春节前后" |
+| Task Type | Reasonable Period | Example |
+|-----------|------------------|---------|
+| Hotel/restaurant booking | Days ~ weeks | "Next weekend", "a Saturday this month" |
+| Flight/train tickets | Weeks ~ 2 months | "Mid-next month", "around National Day holiday" |
+| Activity/exhibition queries | Current week ~ next month | "This weekend", "next week", "within this month" |
+| Course/semester planning | Current season ~ next season | "Next semester", "fall semester" |
+| Annual planning/procurement | End of month/quarter/year | "Before year end", "during Q4", "end of month" |
+| Travel planning | 1~3 months | "During summer vacation", "around Spring Festival" |
+
 ```
-❌ 不合理："预订明年夏天的酒店房间"（周期过长，酒店通常不接受）
-✓ 合理："预订下周末的酒店房间"
+[WRONG] Unreasonable: "Book hotel room for next summer" (period too long, hotels usually don't accept)
+[RIGHT] Reasonable: "Book hotel room for next weekend"
 
-❌ 不合理："查看今天下午的航班"（周期过短，无法实际购票）
-✓ 合理："查看下周三的航班"
+[WRONG] Unreasonable: "Check flights for this afternoon" (period too short, cannot actually purchase tickets)
+[RIGHT] Reasonable: "Check flights for next Wednesday"
 
-❌ 不合理："规划后天的跨国自驾游"（周期过短，不现实）
-✓ 合理："规划下个月的周末自驾游"
-```
-
-**时间相关任务的容错设计**：
-
-对于依赖特定时间的任务，应考虑时间窗口可能已过的情况：
-```
-✓ "查看这周末的活动安排；如果这周末没有活动，查看下周末的"
-✓ "找下个月的航班；如果当月已无合适日期，顺延到再下个月"
-✓ "查看即将举行的马拉松赛事；如果本赛季已结束，查看下赛季首场"
+[WRONG] Unreasonable: "Plan transnational self-driving tour for day after tomorrow" (period too short, unrealistic)
+[RIGHT] Reasonable: "Plan weekend self-driving tour for next month"
 ```
 
-**避免过于久远的时间引用**：
-- 避免引用2023年及更早的数据作为"最新"
-- 对于学术论文等，建议使用"近两年发表"而非具体年份
-- 对于产品/版本，使用"最新版本""当前版本"而非具体版本号
+**Fault tolerance design for time-related tasks**:
+
+For tasks dependent on specific times, consider possibility that time window may have passed:
+```
+[RIGHT] "Check this weekend's event schedule; if no events this weekend, check next weekend's"
+[RIGHT] "Find flights for next month; if no suitable dates remaining in current month, extend to following month"
+[RIGHT] "Check upcoming marathon events; if current season ended, check first event of next season"
+```
+
+**Avoid overly distant time references**:
+- Avoid citing data from 2023 or earlier as "latest"
+- For academic papers, suggest using "published in past two years" rather than specific years
+- For products/versions, use "latest version", "current version" rather than specific version numbers

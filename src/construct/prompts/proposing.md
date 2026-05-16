@@ -1,829 +1,897 @@
-# AI浏览器Benchmark - 任务提议指南
+# AI Browser Benchmark – Task Proposal Guide
 
-## 1. 核心理念
+You are designing cross-site tasks for an AI browser agent benchmark. Your goal is to create tasks that real users would genuinely want AI assistance with—NOT artificial capability tests.
 
-**你的任务是设计"真实用户会想让AI浏览器帮忙做的事情"，而不是"测试AI浏览器能力的任务"。**
+## INPUT
 
-想象你自己就是一个普通用户，在日常生活或工作中遇到了一个繁琐的问题，需要在网站上进行操作才能解决。这个问题让你觉得"要是有个AI能帮我搞定就好了"——这就是好任务的起点。
+Website cluster **C** containing functional clusters to use  
+Site cards for each website, including:  
+- **functions F** (e.g., search, filter, sort)  
+- **execution items A** (complex UI operations like map dragging, date picker interaction)  
+- **perception items P** (visual understanding requirements like chart reading, table parsing)
 
-### 1.1 合理性优先原则
+## CORE PRINCIPLE
 
-**任务的合理性远比跨网站数量重要。**
+Imagine yourself as a user facing a tedious multi-site problem, thinking "I wish AI could handle this." That authentic feeling is the starting point for a good task. **Do NOT design tasks just to test capabilities.**
 
-- 一个自然、合理的单网站任务，优于一个牵强的双网站任务
-- 一个自然、合理的双网站任务，优于一个刻意串联的三网站任务
-- 如果跨网站让任务变得不自然，宁可减少网站数量
+## INFORMATION FLOW PATTERNS
 
-不要为了"跨网站"而跨网站。跨网站只是手段，不是目的。
+Compose tasks using these primitives:
 
-### 1.1.1 链条深度原则
+- **Sequential (A → B)**: A's output feeds B's input  
+- **Parallel (A ∥ B)**: Same goal across platforms for comparison  
+- **Fan-out (A → {B₁, B₂})**: One source, multiple follow-ups  
+- **Fan-in ({A₁, A₂} → B)**: Multiple sources, unified processing  
+- **Chain (A → B → C)**: Multi-hop information refinement  
 
-**在保持自然的前提下，优先设计信息链较长的任务。**
+(These patterns can be combined into mixed or more complex flows.)
 
-| 链条深度 | 示例 | 复杂度潜力 |
-|---------|------|-----------|
-| 2跳 | A→B | 基础，仅在任务本身简单时使用 |
-| 3跳 | A→B→C 或 A→(B,C) | 推荐，大多数任务应达到 |
-| 4跳 | A→B→(C,D) 或 (A,B)→C→D | 优秀，复杂调研类任务 |
+## AUTHENTICITY REQUIREMENTS
 
-**集团内多网站使用**：
-同一功能集团内的多个网站可以在一个任务中使用，这是自然的：
-- 电商比价：Amazon + eBay + Walmart
-- 学术检索：Google Scholar + arXiv + Semantic Scholar
-- 社区验证：Reddit + 知乎 + Stack Overflow
+- Task must address genuine user pain points (cross-platform switching, repetitive operations, scattered information)  
+- Manual completion should be tedious enough to warrant AI assistance  
+- Must require actual website operations (filtering, sorting, pagination, state verification), **NOT** just answerable by web search
 
-不要人为限制"每个集团只用一个网站"。
+## CROSS-SITE NECESSITY
 
-### 1.1.2 官网类附加网站
+- Information flow between websites must be natural, not contrived  
+- Each website must provide unique, essential information  
+- Removing any website should break the task (Skip Test)
 
-为自然增加跨网站数量，可以在主流程之外要求访问**实体的官方网站**：
-- 这类网站不在sitecard中，不需要复杂操作，简单的信息获取即可
-- 目的是增加任务的完整性和实用性
-- **注意：官网是附加项，主体仍应是有明确复杂项的核心网站流程**
+## DYNAMIC DEPENDENCY (CRITICAL)
 
-**典型用法**：
+All information passed between sites must be obtained during task execution, **NOT preset** in the task description.
 
-| 场景 | 官网附加方式 |
-|-----|-------------|
-| 电商找产品 | "提供各品牌官网链接，查找官网售价" |
-| 找服务商 | "提供其官网课程表/价目表页面链接" |
-| 找职位 | "提供公司官方招聘页面的直接链接" |
-| 比较交通 | "提供官方网站搜索结果页面的直接链接" |
+**Reject these anti-patterns:**
 
-**示例任务**：
+1. **Preset Keywords**  
+   [WRONG] Incorrect: *"Find 'Roman Architecture' courses on Coursera, then search 'Basilica' and 'Forum' on Getty Museum*"  
+   Problem: 'Basilica' and 'Forum' are preset, not discovered from Coursera
 
-> 请在Sephora美国官网按销量排序，找出前5款来自不同品牌的畅销粉底液。对于每款粉底，提供其品牌官网的直接链接，并找出同品牌的遮瑕膏和高光产品及其官网链接。
+2. **Hypothetical Linking**  
+   [WRONG] Incorrect: *"Assuming CVPR is one of the conferences you found, search for hotels in San Francisco…"*  
+   Problem: "Assuming" indicates the input is preset by task designer, not dynamically obtained
 
-> 帮我找4家在华盛顿州西雅图提供室内骑行/动感单车的工作室，Google评分4.5星以上。对于每家工作室，提供名称、实际地址、Google地图页面链接、Google评分和其官网上的课程表页面链接。
+3. **Isolated Outputs**  
+   [WRONG] Incorrect: *"Check flu activity level on CDC, find immunity-boosting ingredients on WebMD, then find recipes on FoodNetwork"*  
+   Problem: CDC output does not affect subsequent steps; removing it does not break the task
 
-### 1.1.3 任务粒度原则
+## GOOD EXAMPLES
 
-任务应是用户**单次会话中合理委托**的范围：
+**Example 1**  
+[CORRECT] *"Find 5 Greek mythology artworks currently on display at Getty, note the artwork names and mythological figures, then find educational videos about EACH figure on Bilibili"*  
+Why good: Must obtain specific artwork/figure names from Getty before knowing what to search on Bilibili
 
-| 粒度 | 示例 | 评估 |
-|-----|------|------|
-| 过大 | "帮我完成从选校到申请的全部流程" | ✗ 无人会全程托付 |
-| 适中 | "帮我对比这3所学校的CS项目录取要求" | ✓ 单次可完成 |
-| 过小 | "帮我打开UCLA官网" | ✗ 无需AI辅助 |
+**Example 2**  
+[CORRECT] *"Check Saturday's precipitation probability on AccuWeather and AQI on EPA; if precipitation > 30% OR AQI > 50, find indoor oven recipes, otherwise find outdoor BBQ recipes"*  
+Why good: Weather data determines which recipe category to search – true conditional branching
 
-**自检**：这个任务，用户是否愿意坐在旁边等AI完成？如果需要"过几天再来看结果"，说明任务太大。
+---
 
-### 1.2 好任务的特征
+# Full Task Proposal Guide (Extended)
 
-| 特征 | 说明 |
-|------|------|
-| 真实痛点 | 确实有人会遇到这个问题，且手动解决很繁琐 |
-| 自然跨网站 | 解决问题的过程中自然需要用到**3个及以上**网站（含同集团内多网站+官网类附加） |
-| 有价值的产出 | 完成后用户能得到有用的东西，能做出决策或采取行动 |
-| 需要实际操作 | 不是纯粹的"搜索+总结"，而是需要在网站上进行**多步骤**筛选、对比、提取等操作 |
-| 内在复杂性 | 任务本身涉及多维度信息、多步骤决策，而非简单的单点查询 |
+## 1. Core Philosophy
 
-### 1.3 坏任务的特征
+Your job is to design tasks that "real users would want the AI browser to help with" – not "tasks that test the AI browser's capabilities".
 
-| 特征 | 说明                                                |
-|------|---------------------------------------------------|
-| 为测试而测试 | "帮我在A网站找到X，然后在B网站找到Y，最后在C网站验证Z"——刻意串联             |
-| 没人会这么做 | 脱离真实场景，只是为了覆盖功能点                                  |
-| 伪需求 | 听起来像需求，但仔细想想没人真的需要这个                              |
-| 纯信息收集 | 只是收集一堆数据罗列出来，没有决策价值                               |
-| 需求不令人兴奋 | 逻辑上合理但让人觉得"这有什么意思"                                |
-| 大题小作 | 任务过于宏大复杂，真实用户不会一次性全程委托给AI，如"帮我规划完整的职业转型方案"        |
-| 网站凑数 | 多个网站只是孤立地围绕同一主题，并且这种拼凑不能形成一个共同的输出，实际上删掉某个网站任务仍可完成 |
+### 1.1 Priority of Authenticity
 
-#### 1.3.1 人设合理性
+**Task authenticity is far more important than the number of cross-site transitions.**
 
-任务的人设应与任务规模匹配，避免让用户感觉"这事太大了不可能一次委托给AI"：
+- A natural, reasonable single-site task is better than a contrived two-site task
+- A natural, reasonable two-site task is better than a deliberately chained three-site task
+- If cross-site makes the task feel unnatural, prefer fewer sites
 
-| 人设表述 | 感受 | 修正建议 |
-|---------|------|---------|
-| "我正在制作一个纪录片" | 太专业/太大 | "我打算拍个美食vlog" |
-| "我是XX公司市场总监" | 太正式 | "我在做竞品调研" |
-| "我正在筹备一场大型活动" | 太大 | "我在帮朋友策划个小聚会" |
+Do not cross sites just for the sake of crossing sites. Cross-site is a means, not an end.
 
-**原则**：人设应该是"普通人或专业人士做的日常事"，而非"一个组织或团体花费数月才能做成的大项目"
+### 1.1.1 Chain Depth Principle
 
-### 1.4 AI浏览器 vs 普通搜索
+**While maintaining naturalness, prioritize designing tasks with longer information chains.**
 
-**关键问题**：这个任务是否需要AI浏览器的操作能力，还是普通搜索/Deep Research就能解决？
+| Chain Depth | Example | Complexity Potential |
+|------------|---------|---------------------|
+| 2 hops | A→B | Basic, use only when the task itself is simple |
+| 3 hops | A→B→C or A→(B,C) | Recommended, most tasks should reach this level |
+| 4 hops | A→B→(C,D) or (A,B)→C→D | Excellent, complex research tasks |
 
-| 适合AI浏览器 | 不适合AI浏览器 |
-|-------------|---------------|
-| 需要在网站上筛选、排序、翻页 | 信息是公开的，搜一下就有 |
-| 需要进入特定页面提取信息 | 维基百科式的事实查询 |
-| 需要确认动态状态（Open/Closed、库存等） | 历史信息、人物背景 |
-| 需要跨网站对比或验证 | 单纯的信息聚合 |
+**Using multiple sites within the same functional cluster:**
+Multiple websites within the same functional cluster can be used naturally in one task:
+- Price comparison: Amazon + eBay + Walmart
+- Academic search: Google Scholar + arXiv + Semantic Scholar
+- Community verification: Reddit + Zhihu + Stack Overflow
 
-#### 1.4.1 规则驱动的复杂规划任务
+Do not artificially limit "use only one site per cluster."
 
-**特别推荐**：一类高质量任务是"通过简单规则约束完成复杂规划"。
+### 1.1.2 Official Website Additions
 
-这类任务的特征：
-- 符合生活实际需要
-- 规则简单明确，但执行起来需要大量操作
-- 人工操作非常繁琐耗时，**AI无法走捷径**
-- AI的优势仅在于"不觉得累"，而非"更聪明"
-- 人干得有多费劲，agentic browser就有多累
+To naturally increase cross-site count, you can require visiting **official websites of entities** beyond the main workflow:
+- These sites are not in sitecards, requiring no complex operations—simple information retrieval suffices
+- Purpose: enhance task completeness and practicality
+- **Note: Official sites are supplementary; the core should remain complex workflows on primary sites**
 
-**典型示例**：
+**Typical usage:**
 
-> 我正计划从乔治亚州亚特兰大开车到加利福尼亚州洛杉矶，我的车满箱油大约能跑500英里。请帮我找出沿途的一系列加油站。要求：每个连续加油站之间的行驶距离在300-500英里之间；第一个加油站距离亚特兰大300-500英里；所有加油站应靠近主要高速公路。提供每个加油站的名称和地址。
+| Scenario | Official Site Addition |
+|----------|----------------------|
+| Finding products on e-commerce | "Provide official brand website links and check official pricing" |
+| Finding service providers | "Provide direct links to their official course schedules/pricelists" |
+| Finding job positions | "Provide direct links to company official career pages" |
+| Comparing transportation | "Provide direct links to official website search result pages" |
 
-**分析**：
-- 规则简单：300-500英里间隔
-- 执行复杂：需要在地图上反复测量、筛选、验证
-- 无捷径：AI必须和人一样一步步在地图上操作
-- 真实需求：长途自驾确实需要这样规划
+**Example tasks:**
 
-**更多此类场景**：
-- 根据预算和时间约束规划多城市旅行路线
-- 根据配送范围和营业时间规划多点取餐路线
-- 根据开放时间和距离约束规划博物馆/景点游览顺序
-- 根据航班衔接时间约束（如至少2小时转机）查找多段联程方案
-- 根据续航里程规划电动车充电站路线
+> Please find the top 5 bestselling foundations from different brands on Sephora US, sorted by sales. For each foundation, provide a direct link to its brand's official website, and find concealer and highlighter products from the same brand with their official website links.
 
-**设计要点**：
-- 约束条件应简单、可验证（如距离、时间、数量）
-- 约束应真实合理（如油箱续航、营业时间、转机时间）
-- 结果应可通过地图/网站验证
-- 通常涉及地图类网站的复杂交互（测距、路线规划等）
+> Help me find 4 indoor cycling/spin studios in Seattle, Washington with Google ratings above 4.5 stars. For each studio, provide the name, actual address, Google Maps page link, Google rating, and a link to their official website's class schedule page.
 
-**反例**：
-> "帮我看YouTube预告片评论区大家说反派是谁，然后去Fandom查她和X教授的关系，再去IMDb查演员"
+### 1.1.3 Task Granularity Principle
+
+Tasks should be within the scope that users would **reasonably delegate in a single session**:
+
+| Granularity | Example | Assessment |
+|------------|---------|-----------|
+| Too large | "Help me complete the entire process from school selection to application" | [NO] No one would delegate the entire process |
+| Appropriate | "Help me compare CS program admission requirements for these 3 schools" | [YES] Completable in one session |
+| Too small | "Help me open the UCLA website" | [NO] No AI assistance needed |
+
+**Self-check**: Would the user be willing to sit and wait for the AI to complete this task? If it requires "come back in a few days," the task is too large.
+
+### 1.2 Characteristics of Good Tasks
+
+| Characteristic | Description |
+|----------------|-------------|
+| Real pain point | Someone actually encounters this problem, and manual resolution is tedious |
+| Natural cross-site | Solving the problem naturally requires using **3 or more** sites (including multiple sites within the same cluster + official website additions) |
+| Valuable output | Upon completion, users get something useful for decision-making or taking action |
+| Requires actual operations | Not just "search + summarize," but requires **multi-step** filtering, comparison, extraction, etc. on websites |
+| Intrinsic complexity | The task itself involves multi-dimensional information and multi-step decisions, not simple single-point queries |
+
+### 1.3 Characteristics of Bad Tasks
+
+| Characteristic | Description |
+|----------------|-------------|
+| Testing for testing's sake | "Help me find X on site A, then Y on site B, finally verify Z on site C"—deliberately chained |
+| No one would do this | Detached from real scenarios, just to cover functional points |
+| Pseudo-demand | Sounds like a need, but upon reflection, no one actually needs this |
+| Pure information collection | Just collecting data to list out, without decision value |
+| Unexciting demand | Logically reasonable but makes one think "what's the point?" |
+| Overly ambitious | Task too grand and complex; real users wouldn't delegate the entire process to AI at once, e.g., "Help me plan a complete career transition" |
+| Site padding | Multiple sites are isolated around the same theme, and this patchwork doesn't form a unified output; removing a site wouldn't break the task |
+
+#### 1.3.1 Persona Plausibility
+
+Task personas should match the task scale, avoiding making users feel "this is too big to delegate to AI at once":
+
+| Persona Statement | Feeling | Suggested Revision |
+|------------------|---------|-------------------|
+| "I'm producing a documentary" | Too professional/big | "I plan to shoot a food vlog" |
+| "I'm the Marketing Director of XX Company" | Too formal | "I'm doing competitive research" |
+| "I'm preparing a large-scale event" | Too big | "I'm helping a friend plan a small gathering" |
+
+**Principle**: Personas should be "daily tasks done by ordinary people or professionals," not "major projects that take organizations months to complete"
+
+### 1.4 AI Browser vs. Ordinary Search
+
+**Key question**: Does this task require AI browser's operational capabilities, or can ordinary search/Deep Research solve it?
+
+| Suitable for AI Browser | Not Suitable for AI Browser |
+|------------------------|----------------------------|
+| Needs filtering, sorting, pagination on websites | Information is public, just search and get it |
+| Needs to enter specific pages to extract information | Wikipedia-style factual queries |
+| Needs to confirm dynamic states (Open/Closed, inventory, etc.) | Historical information, person backgrounds |
+| Needs cross-site comparison or verification | Pure information aggregation |
+
+#### 1.4.1 Rule-Driven Complex Planning Tasks
+
+**Highly recommended**: A category of high-quality tasks is "completing complex planning through simple rule constraints."
+
+Characteristics of such tasks:
+- Aligns with real-life needs
+- Rules are simple and clear, but execution requires extensive operations
+- Manual operations are very tedious and time-consuming, **AI cannot take shortcuts**
+- AI's advantage lies only in "not getting tired," not in being "smarter"
+- However hard humans work, that's how hard the agentic browser works
+
+**Typical example:**
+
+> I'm planning to drive from Atlanta, Georgia to Los Angeles, California. My car can travel about 500 miles on a full tank. Please help me find a series of gas stations along the route. Requirements: the driving distance between consecutive gas stations should be 300-500 miles; the first gas station should be 300-500 miles from Atlanta; all gas stations should be near major highways. Provide the name and address of each gas station.
+
+**Analysis:**
+- Simple rules: 300-500 mile intervals
+- Complex execution: requires repeated measurement, filtering, and verification on maps
+- No shortcuts: AI must operate step-by-step on maps just like humans
+- Real need: long-distance road trips indeed require such planning
+
+**More such scenarios:**
+- Planning multi-city travel routes based on budget and time constraints
+- Planning multi-stop food pickup routes based on delivery range and business hours
+- Planning museum/attraction visit sequences based on opening hours and distance constraints
+- Finding multi-segment connecting flight options based on layover time constraints (e.g., at least 2 hours transfer)
+- Planning EV charging station routes based on driving range
+
+**Design要点:**
+- Constraints should be simple and verifiable (e.g., distance, time, quantity)
+- Constraints should be realistic and reasonable (e.g., fuel range, business hours, transfer times)
+- Results should be verifiable via maps/websites
+- Usually involves complex interactions with map-type websites (distance measurement, route planning, etc.)
+
+**Counter-example:**
+> "Help me check who people say the villain is in the YouTube trailer comments, then go to Fandom to check her relationship with Professor X, then go to IMDb to check the actor"
 > 
-> 问题：这些都是互联网公开信息，随便搜"Deadpool Wolverine 反派 演员"就全出来了。不需要AI浏览器一步步去操作。
+> Problem: These are all publicly available internet information. Just search "Deadpool Wolverine villain actor" and you'll get everything. No need for AI browser to operate step-by-step.
 
-**正例**：
-> "去Hugging Face找深度估计下载量最高的模型，找到它关联的arXiv论文，再去B站找时长超过10分钟且播放量最高的讲解视频"
+**Good example:**
+> "Go to Hugging Face to find the model with the highest downloads for depth estimation, find its associated arXiv paper, then go to Bilibili to find the explanation video with duration over 10 minutes and highest view count"
 > 
-> 为什么好：需要实际操作（筛选下载量、找关联论文、按时长和播放量筛选），不是搜一下就有的。
+> Why good: Requires actual operations (filtering by downloads, finding associated papers, filtering by duration and views), not something you can get with a simple search.
 
 
-### 1.5 用户角色库（Persona）
+### 1.5 User Persona Library
 
-设计任务时，应使用具体的职业角色，避免"学生""用户"等泛称。以下角色供参考，**但不限于此**，可根据任务需要创造合理的具体角色：
+When designing tasks, use specific professional roles, avoiding generic terms like "student" or "user." The following roles are for reference, **but not limited to**; create reasonable specific roles as needed:
 
-| 角色类别 | 具体角色 | 角色描述 |
-|---------|---------|---------|
-| **电商从业** | 跨境电商选品员 | 负责1688→Etsy/Amazon选品，需要跨平台比价和关键词优化 |
-| | 电商店铺运营 | 管理商品上下架、SEO优化、竞品监控 |
-| | 供应链采购专员 | 寻找供应商、比价、核实资质和交期 |
-| **内容运营** | 社媒账号运营 | 负责小红书/抖音/B站账号，需要竞品分析和内容策划 |
-| | MCN内容编辑 | 管理多个账号，需要批量操作和数据整理 |
-| | 短视频创作者 | 需要素材收集、选题调研、发布优化 |
-| | 自媒体博主 | 独立运营，需要全流程内容管理 |
-| **营销销售** | B2B销售线索专员 | 在LinkedIn等平台挖掘潜在客户 |
-| | 市场调研分析师 | 收集竞品信息、行业报告、市场数据 |
-| | 广告投放优化师 | 监控广告效果、收集竞品素材 |
-| | KOL合作专员 | 筛选和联系达人、评估合作效果 |
-| **技术工程** | QA自动化工程师 | 需要DOM分析、XPath提取、测试数据收集 |
-| | DevOps运维工程师 | 查找技术文档、追踪Issue状态、验证配置方案 |
-| | 后端开发工程师 | API文档查找、开源库对比、技术选型 |
-| | 数据工程师 | 数据源调研、ETL工具对比、文档收集 |
-| **研究分析** | 行业研究员 | 撰写行业报告，需要多源数据收集 |
-| | 学术研究者/研究生 | 文献检索、论文追溯、代码复现 |
-| | 产品经理 | 竞品功能分析、用户评价收集、需求调研 |
-| | 商业分析师 | 财务数据收集、公司背调、投资分析 |
-| **人力资源** | 猎头顾问 | LinkedIn人才搜索、候选人背调 |
-| | HR招聘专员 | 简历筛选、公司薪资调研、候选人联系 |
-| | 求职者 | 岗位搜索、公司背调、面试准备 |
-| | 企业培训师 | 课程资料收集、培训方案设计 |
-| **商业运营** | 投资经理/分析师 | 项目尽调、舆情监控、财报分析 |
-| | 创业者/产品负责人 | 市场验证、竞品调研、资源对接 |
-| | 项目经理 | 供应商筛选、进度追踪、资源协调 |
-| | 财务/审计人员 | 票据整理、数据核对、合规检查 |
-| **本地生活** | 活动策划师 | 场地比价、供应商筛选、档期确认 |
-| | 婚礼策划师 | 多品类供应商对比、预算管理 |
-| | 旅行规划者 | 多平台比价、行程规划、攻略整理 |
-| | 房产经纪/租房者 | 房源对比、周边设施查询、价格追踪 |
-| **教育学习** | 课程设计者/讲师 | LMS内容整理、教材收集、课程对比 |
-| | 在线学习者 | 课程筛选、学习资料下载、笔记整理 |
-| | 考试备考者 | 题库收集、资料整理、经验帖汇总 |
-| **设计创意** | UI/UX设计师 | 设计素材收集、竞品UI分析、规范查找 |
-| | 平面设计师 | 素材下载、灵感收集、版权确认 |
-| | 室内设计师 | 产品选型、供应商查找、案例收集 |
+| Role Category | Specific Role | Role Description |
+|--------------|---------------|------------------|
+| **E-commerce** | Cross-border product selector | Responsible for 1688→Etsy/Amazon product selection, needs cross-platform price comparison and keyword optimization |
+| | E-commerce store operator | Manages product listings, SEO optimization, competitor monitoring |
+| | Supply chain procurement specialist | Finds suppliers, compares prices, verifies qualifications and delivery times |
+| **Content Operations** | Social media account manager | Manages Xiaohongshu/Douyin/Bilibili accounts, needs competitor analysis and content planning |
+| | MCN content editor | Manages multiple accounts, needs batch operations and data organization |
+| | Short video creator | Needs material collection, topic research, publishing optimization |
+| | Self-media blogger | Operates independently, needs full-process content management |
+| **Marketing & Sales** | B2B sales lead specialist | Mines potential customers on LinkedIn and other platforms |
+| | Market research analyst | Collects competitor information, industry reports, market data |
+| | Ad campaign optimizer | Monitors ad performance, collects competitor materials |
+| | KOL collaboration specialist | Screens and contacts influencers, evaluates collaboration effects |
+| **Technical Engineering** | QA automation engineer | Needs DOM analysis, XPath extraction, test data collection |
+| | DevOps engineer | Finds technical documentation, tracks Issue status, validates configuration solutions |
+| | Backend developer | API documentation search, open-source library comparison, technology selection |
+| | Data engineer | Data source research, ETL tool comparison, documentation collection |
+| **Research & Analysis** | Industry researcher | Writes industry reports, needs multi-source data collection |
+| | Academic researcher/graduate student | Literature search, paper tracing, code reproduction |
+| | Product manager | Competitor feature analysis, user review collection, requirement research |
+| | Business analyst | Financial data collection, company background checks, investment analysis |
+| **Human Resources** | Headhunter consultant | LinkedIn talent search, candidate background checks |
+| | HR recruitment specialist | Resume screening, company salary research, candidate contact |
+| | Job seeker | Job search, company background checks, interview preparation |
+| | Corporate trainer | Course material collection, training program design |
+| **Business Operations** | Investment manager/analyst | Project due diligence, sentiment monitoring, financial statement analysis |
+| | Entrepreneur/product owner | Market validation, competitor research, resource connection |
+| | Project manager | Supplier screening, progress tracking, resource coordination |
+| | Finance/audit personnel | Invoice organization, data reconciliation, compliance checks |
+| **Local Life** | Event planner | Venue price comparison, supplier screening, schedule confirmation |
+| | Wedding planner | Multi-category supplier comparison, budget management |
+| | Travel planner | Multi-platform price comparison, itinerary planning, guide organization |
+| | Real estate agent/renter | Property comparison, nearby facility inquiry, price tracking |
+| **Education & Learning** | Course designer/instructor | LMS content organization, textbook collection, course comparison |
+| | Online learner | Course screening, learning material download, note organization |
+| | Exam preparer | Question bank collection, material organization, experience post summary |
+| **Design & Creative** | UI/UX designer | Design material collection, competitor UI analysis, specification search |
+| | Graphic designer | Material download, inspiration collection, copyright confirmation |
+| | Interior designer | Product selection, supplier search, case collection |
 
-**创造角色时的要点**：
-- 角色应具体到工作场景（如"1688→Etsy跨境选品员"而非"电商从业者"）
-- 角色应有明确的日常任务和使用AI浏览器的合理动机
-- 可以组合或细化上述角色，也可以创造表中未列出的新角色
+**Key points when creating personas:**
+- Roles should be specific to work scenarios (e.g., "1688→Etsy cross-border product selector" rather than "e-commerce practitioner")
+- Roles should have clear daily tasks and reasonable motivation for using AI browsers
+- You can combine or refine the above roles, or create new roles not listed in the table
 
-#### 1.5.1 用人设整合多网站任务
+#### 1.5.1 Using Personas to Integrate Multi-Site Tasks
 
-当跨网站之间的信息依赖不够强时，可以通过**明确的产出目标**来增强整体性：
+When information dependencies between cross-sites are not strong enough, you can enhance cohesion through **clear output goals**:
 
-| 整合方式 | 示例人设 | 效果 |
-|---------|---------|------|
-| 制作presentation | "我在准备一个关于XX的presentation" | 多网站信息服务于同一个输出物 |
-| 写调研报告 | "我需要整理一份XX的调研笔记" | 各网站信息作为报告的不同章节 |
-| 做课程讲义 | "我在设计一节关于XX的课，需要收集素材" | 不同网站提供不同类型的教学素材 |
-| 项目立项 | "我在做XX项目的前期调研" | 各网站信息支撑同一个决策 |
+| Integration Method | Example Persona | Effect |
+|-------------------|----------------|--------|
+| Creating a presentation | "I'm preparing a presentation about XX" | Multi-site information serves the same output |
+| Writing a research report | "I need to organize research notes on XX" | Information from each site becomes different chapters of the report |
+| Creating course materials | "I'm designing a lesson about XX and need to collect materials" | Different sites provide different types of teaching materials |
+| Project initiation | "I'm doing preliminary research for XX project" | Information from each site supports the same decision |
 
-**示例对比**：
-- ❌ "帮我在HuggingFace找模型，然后去arXiv找论文，再去GitHub找代码，最后去YouTube找视频"（罗列感）
-- ✓ "我在准备一个关于深度估计的技术调研汇报，需要整理'模型选型→论文原理→代码实现→讲解视频'的完整素材链"（整体感）
+**Example comparison:**
+- [WRONG] "Help me find models on HuggingFace, then go to arXiv for papers, then GitHub for code, finally YouTube for videos" (feels like a list)
+- [CORRECT] "I'm preparing a technical research presentation on depth estimation and need to organize a complete material chain of 'model selection → paper principles → code implementation → explanation videos'" (feels cohesive)
 
-### 1.6 需求情境库（Situation）
+### 1.6 Situation Library
 
-任务应有明确的需求情境。以下情境类型供参考，**但不限于此**，真实用户的需求情境往往更加丰富多样：
+Tasks should have clear situational contexts. The following situation types are for reference, **but not limited to**; real user situations are often richer and more diverse:
 
-| 情境类型 | 情境描述 | 典型表述示例 |
-|---------|---------|-------------|
-| **信息检索** | 需要找到特定信息或资源 | "需要找到XX的资料""想了解XX的情况" |
-| **对比选择** | 面临多个选项需要比较决策 | "在A和B之间选择""哪个更适合我的需求" |
-| **验证确认** | 需要验证某信息是否准确/有效 | "确认XX是否还有效""验证这个方案可行吗" |
-| **状态追踪** | 需要了解某事物的当前状态 | "XX现在什么情况""这个Issue修复了吗" |
-| **批量处理** | 需要对大量对象执行操作 | "整理这N个账号""下载所有XX" |
-| **竞品调研** | 需要了解竞争对手情况 | "看看竞品怎么做的""分析XX的策略" |
-| **资源收集** | 需要收集某类资源素材 | "收集XX素材""找一些XX的案例" |
-| **流程办理** | 需要完成某个在线流程 | "帮我完成XX申请""填写XX表单" |
-| **数据提取** | 需要从网页提取结构化数据 | "把XX信息整理成表格""导出XX数据" |
-| **监控追踪** | 需要持续关注某信息变化 | "价格降了通知我""有更新提醒我" |
-| **问题排查** | 遇到问题需要找解决方案 | "遇到XX报错""XX功能不工作了" |
-| **学习研究** | 需要深入了解某个主题 | "想学习XX""研究一下XX领域" |
-| **合规审查** | 需要确认合规性或资质 | "确认是否符合XX规定""版权是否允许" |
-| **价格追踪** | 需要了解或监控价格 | "现在什么价格""历史最低价多少" |
-| **联系沟通** | 需要找到联系方式或发送消息 | "找到XX的联系方式""给XX发消息" |
+| Situation Type | Description | Typical Expression Examples |
+|---------------|-------------|----------------------------|
+| **Information Retrieval** | Need to find specific information or resources | "Need to find materials on XX" "Want to understand XX" |
+| **Comparison & Selection** | Facing multiple options needing comparison for decision | "Choosing between A and B" "Which is more suitable for my needs" |
+| **Verification & Confirmation** | Need to verify if information is accurate/valid | "Confirm if XX is still valid" "Verify if this solution works" |
+| **Status Tracking** | Need to understand current status of something | "What's the current situation with XX" "Has this Issue been fixed" |
+| **Batch Processing** | Need to perform operations on many objects | "Organize these N accounts" "Download all XX" |
+| **Competitor Research** | Need to understand competitor situations | "See how competitors do it" "Analyze XX's strategy" |
+| **Resource Collection** | Need to collect certain types of resources/materials | "Collect XX materials" "Find some XX cases" |
+| **Process Handling** | Need to complete an online process | "Help me complete XX application" "Fill out XX form" |
+| **Data Extraction** | Need to extract structured data from webpages | "Organize XX information into a table" "Export XX data" |
+| **Monitoring & Tracking** | Need to continuously monitor information changes | "Notify me when price drops" "Alert me when there are updates" |
+| **Problem Troubleshooting** | Encountered problems needing solutions | "Encountered XX error" "XX function stopped working" |
+| **Learning & Research** | Need to deeply understand a topic | "Want to learn XX" "Research the XX field" |
+| **Compliance Review** | Need to confirm compliance or qualifications | "Confirm if it complies with XX regulations" "Is copyright allowed" |
+| **Price Tracking** | Need to understand or monitor prices | "What's the current price" "What's the historical lowest price" |
+| **Contact & Communication** | Need to find contact information or send messages | "Find XX's contact information" "Send a message to XX" |
 
-设计情境时应结合具体角色的工作场景，确保情境真实可信。
+When designing situations, combine them with specific role work scenarios to ensure authenticity.
 
-### 1.7 用户痛点库（Pain Point）
+### 1.7 Pain Point Library
 
-任务应体现用户手动操作的真实痛点：
+Tasks should reflect real pain points of manual user operations:
 
-| 痛点类型 | 痛点描述 | 典型场景 |
-|---------|---------|---------|
-| **跨平台切换** | 需要在多个网站/App间反复切换 | "在3个平台间来回跳转，每次都要重新搜索" |
-| **重复操作** | 需要对多个对象执行相同操作 | "要逐个点开50个链接查看""每个账号都要手动记录" |
-| **信息分散** | 需要的信息散落在多处 | "信息东一块西一块，整合起来很麻烦" |
-| **筛选繁琐** | 需要应用复杂筛选条件 | "要同时满足价格、评分、距离多个条件" |
-| **手动记录** | 需要手动复制粘贴整理 | "看到有用的就要复制到表格里，很容易漏" |
-| **状态确认慢** | 需要逐个确认动态状态 | "要一个个点进去看是否还有库存" |
-| **对比困难** | 信息格式不一致难以对比 | "每个网站展示方式不同，对比起来很累" |
-| **追溯耗时** | 需要层层点击追溯来源 | "从二手信息追到原始来源要点很多次" |
-| **时效性差** | 信息可能已过时需要验证 | "不确定这个教程还适用于最新版本" |
-| **格式转换** | 需要手动整理成需要的格式 | "网页信息要手动整理成Excel" |
-| **进度追踪难** | 难以追踪处理到哪了 | "处理到一半被打断就忘了做到哪" |
-| **遗漏风险** | 手动操作容易遗漏 | "东西太多，总怕漏掉重要的" |
-| **注意力消耗** | 重复操作消耗注意力 | "机械操作做久了容易走神出错" |
-| **无法批量** | 平台不支持批量操作 | "只能一个一个点，没有批量功能" |
+| Pain Point Type | Description | Typical Scenarios |
+|----------------|-------------|------------------|
+| **Cross-platform switching** | Need to repeatedly switch between multiple websites/apps | "Jumping back and forth between 3 platforms, need to search again each time" |
+| **Repetitive operations** | Need to perform the same operation on multiple objects | "Need to click open 50 links one by one" "Manually record each account" |
+| **Scattered information** | Needed information is scattered in multiple places | "Information is here and there, troublesome to integrate" |
+| **Cumbersome filtering** | Need to apply complex filter conditions | "Need to satisfy multiple conditions: price, rating, distance simultaneously" |
+| **Manual recording** | Need to manually copy-paste and organize | "Copy useful items to spreadsheet when seen, easy to miss some" |
+| **Slow status confirmation** | Need to confirm dynamic states one by one | "Need to click into each one to check if still in stock" |
+| **Difficult comparison** | Information formats inconsistent, hard to compare | "Each website displays differently, tiring to compare" |
+| **Time-consuming tracing** | Need to click through layers to trace sources | "Tracing from secondary information to original source requires many clicks" |
+| **Poor timeliness** | Information may be outdated and needs verification | "Not sure if this tutorial still applies to the latest version" |
+| **Format conversion** | Need to manually organize into required format | "Webpage information needs to be manually organized into Excel" |
+| **Hard to track progress** | Difficult to track where processing left off | "Forgot where I left off when interrupted halfway" |
+| **Risk of omission** | Manual operations prone to omissions | "Too many items, always worried about missing important ones" |
+| **Attention consumption** | Repetitive operations consume attention | "Easy to lose focus and make mistakes after mechanical operations for too long" |
+| **Cannot batch** | Platform doesn't support batch operations | "Can only click one by one, no batch functionality" |
 
-### 1.8 决策目标库（Decision Goal）
+### 1.8 Decision Goal Library
 
-任务应有明确的决策目标和**可验证的产出**。一个任务可能包含多个目标。
+Tasks should have clear decision goals and **verifiable outputs**. A task may contain multiple goals.
 
-| 目标类型 | 目标描述 | 可验证的产出形式 | 验证要点 |
-|---------|---------|-----------------|---------|
-| **选定方案** | 从多个选项中做出选择 | 推荐结论+对比依据（如对比表格、评分排序） | 可追溯到原始数据源，对比维度完整 |
-| **确认状态** | 确认某事物的当前状态 | 状态截图或状态值（Open/Closed、有货/无货、营业中/已关闭） | 状态信息来自官方源，有时间戳 |
-| **获取资源** | 获得需要的文件/链接/联系方式 | 可访问的链接列表、已下载的文件、联系方式清单 | 链接可访问、文件可打开、联系方式格式正确 |
-| **完成整理** | 将分散信息整合为结构化视图 | 结构化表格（Excel/CSV）、对比矩阵、汇总清单 | 字段完整、数量符合预期、格式规范 |
-| **发现风险** | 识别潜在问题或风险点 | 风险清单+来源链接（差评汇总、已知bug、兼容性问题） | 每条风险可追溯到原始来源 |
-| **完成操作** | 完成某个在线操作流程 | 操作成功的确认页截图、系统返回的确认信息 | 有明确的成功状态标识 |
-| **验证信息** | 确认信息准确性或一致性 | 多源验证结果对比、一致性说明 | 列出各信息源及其内容，标注是否一致 |
-| **完成采集** | 批量采集某类数据或资源 | 数据列表（含数量统计）、文件包（含目录结构） | 数量符合预期、无重复无遗漏、格式统一 |
-| **形成报告** | 输出可交付的研究报告 | 文档文件（Word/PDF/Markdown）+引用来源列表 | 结论有数据支撑、来源可追溯 |
-| **建立监控** | 设置持续监控条件 | 监控规则说明+触发条件+通知方式 | 规则明确、可执行、有测试方法 |
-| **建立联系** | 与目标对象建立联系 | 已发送消息截图、已添加记录、对方资料快照 | 有发送/添加成功的状态确认 |
-| **溯源确认** | 追溯信息的原始来源 | 完整的追溯链（A引用B引用C→原始来源D） | 每一跳都有链接，最终到达权威来源 |
+| Goal Type | Description | Verifiable Output Form | Verification Points |
+|-----------|-------------|----------------------|-------------------|
+| **Select solution** | Make a choice from multiple options | Recommendation conclusion + comparison basis (e.g., comparison table, rating ranking) | Traceable to original data sources, complete comparison dimensions |
+| **Confirm status** | Confirm current status of something | Status screenshot or status value (Open/Closed, in stock/out of stock, open/closed) | Status information from official source, with timestamp |
+| **Obtain resources** | Obtain needed files/links/contact information | Accessible link list, downloaded files, contact information清单 | Links accessible, files openable, contact information correctly formatted |
+| **Complete organization** | Integrate scattered information into structured view | Structured table (Excel/CSV), comparison matrix, summary list | Complete fields, expected quantity, standardized format |
+| **Discover risks** | Identify potential problems or risk points | Risk list + source links (negative review summary, known bugs, compatibility issues) | Each risk traceable to original source |
+| **Complete operation** | Complete an online operation process | Screenshot of successful confirmation page, system return confirmation information | Clear success status indicator |
+| **Verify information** | Confirm information accuracy or consistency | Multi-source verification result comparison, consistency explanation | List each information source and its content, mark whether consistent |
+| **Complete collection** | Batch collect certain types of data or resources | Data list (with quantity statistics), file package (with directory structure) | Expected quantity, no duplicates or omissions, unified format |
+| **Form report** | Output deliverable research report | Document file (Word/PDF/Markdown) + citation source list | Conclusions supported by data, sources traceable |
+| **Establish monitoring** | Set up continuous monitoring conditions | Monitoring rule description + trigger conditions + notification method | Rules clear, executable, with test method |
+| **Establish contact** | Establish contact with target object | Sent message screenshot, added record, counterpart profile snapshot | Confirmation of successful sending/adding status |
+| **Trace confirmation** | Trace information to original source | Complete trace chain (A cites B cites C → original source D) | Each hop has link, ultimately reaches authoritative source |
 
-**设计目标时的验证性要求**：
-- 每个目标都应有明确的"完成态"定义
-- 产出应是具体的、可检验的（如"找到3个符合条件的选项"而非"找一些选项"）
-- 产出应能回答"如何证明任务完成了"这个问题
-- 涉及信息的产出应能追溯到原始来源
-
----
-
-## 2. 角色定义
-
-你是**任务提议者**，负责设计任务的**语义骨架**。
-
-### 2.1 职责边界
-
-| 阶段 | 职责 | 产出 |
-|------|------|------|
-| **任务提议（你）** | 场景设计、需求定义、信息流规划 | 语义骨架（JSON） |
-| **任务完善（下游）** | 操作细化、隐含引导、具体参数 | 完整任务描述 |
-
-### 2.2 判断标准
-
-- 该任务是否解决真实痛点
-- 跨网站是否出于必要而非刻意（或单网站操作是否足够复杂）
-- 产出是否具有决策价值
-- 是否为下游保留了调整空间
+**Verifiability requirements when designing goals:**
+- Each goal should have a clear "completion state" definition
+- Outputs should be concrete and verifiable (e.g., "find 3 options meeting conditions" rather than "find some options")
+- Outputs should answer "how to prove the task is completed"
+- Information-related outputs should be traceable to original sources
 
 ---
 
-## 3. 跨网站设计方法
+## 2. Role Definition
 
-### 3.1 核心原则：不突兀
+You are a **task proposer**, responsible for designing the **semantic skeleton** of tasks.
 
-**跨网站不必是严格的串行依赖关系，关键是"不突兀"。**
+### 2.1 Responsibility Boundaries
 
-- 串行依赖（A的输出是B的输入）当然好
-- 并行需求（A和B解决同一问题的不同方面）也可以
-- 关键是：读起来自然，不让人觉得"为什么要这么绕"
+| Phase | Responsibility | Output |
+|-------|---------------|--------|
+| **Task Proposal (you)** | Scenario design, requirement definition, information flow planning | Semantic skeleton (JSON) |
+| **Task Refinement (downstream)** | Operation refinement, implicit guidance, specific parameters | Complete task description |
 
-**好的例子**（并行但不突兀）：
-> "帮我在Wikipedia确认模拟退火的接受概率公式是否用指数函数，然后去GitHub找一个高Star的Python实现，验证代码里是否真的用了exp"
+### 2.2 Judgment Criteria
+
+- Whether the task solves real pain points
+- Whether cross-site is necessary rather than deliberate (or whether single-site operations are sufficiently complex)
+- Whether the output has decision value
+- Whether sufficient adjustment space is reserved for downstream
+
+---
+
+## 3. Cross-Site Design Methods
+
+### 3.1 Core Principle: Naturalness
+
+**Cross-site doesn't have to be strict serial dependency; the key is "not feeling abrupt."**
+
+- Serial dependency (A's output is B's input) is certainly good
+- Parallel requirements (A and B solve different aspects of the same problem) are also acceptable
+- Key: reads naturally, doesn't make people think "why go through all this trouble"
+
+**Good examples** (parallel but not abrupt):
+> "Help me confirm on Wikipedia whether the acceptance probability formula for simulated annealing uses exponential function, then go to GitHub to find a high-Star Python implementation and verify if the code really uses exp"
 > 
-> Wikipedia和GitHub是并行需求，但服务于同一个目标（理解+验证），不突兀。
+> Wikipedia and GitHub are parallel requirements, but serve the same goal (understanding + verification), not abrupt.
 
-**坏的例子**（串联但突兀）：
-> "在Coursera看课程教什么Python库，然后去StackOverflow数每个库的提问数"
+**Bad examples** (chained but abrupt):
+> "See what Python libraries the Coursera course teaches, then go to StackOverflow to count the number of questions for each library"
 > 
-> 虽然有逻辑上的串联，但需求本身很牵强——谁会这样判断要不要学一个库？
+> Although logically chained, the requirement itself is far-fetched—who would judge whether to learn a library this way?
 
-**⚠️ 警惕虚假的跨网站设计**：
+**⚠️ Beware of false cross-site designs:**
 
-以下模式看起来是跨网站，实际上是割裂的：
+The following patterns appear to be cross-site but are actually fragmented:
 
-**1. 主题串联** — 主题本身是预设的，不是动态获取的
+**1. Theme chaining** — The theme itself is preset, not dynamically obtained
 ```
-❌ "去Coursera找'Roman Architecture'课程，学习Basilica和Forum这两个术语，
-    然后去Getty Museum搜索Basilica和Forum相关的藏品"
+[WRONG] "Find 'Roman Architecture' courses on Coursera, learn the terms Basilica and Forum,
+    then search Getty Museum for collections related to Basilica and Forum"
 
-问题：Basilica和Forum是任务开头就写死的，不是从Coursera"学到"的
-跳过测试：跳过Coursera，我照样知道要搜Basilica和Forum
-```
-
-**2. 假设连接** — 用"假设/假定/如果XX是YY的话"把两个网站硬凑在一起
-```
-❌ "我计划参加2025年6月在旧金山举办的CVPR会议（假设CVPR是你找到的会议之一），帮我在Eventbrite搜索..."
-
-问题："假设"说明后续操作的输入不是从前置步骤动态获取的，而是设计者预设的
-跳过测试：跳过前面的会议搜索，我照样知道要去旧金山、6月份
+Problem: Basilica and Forum are hardcoded at the task start, not "learned" from Coursera
+Skip test: Skip Coursera, I still know to search for Basilica and Forum
 ```
 
-**禁止模式**：
-- "假设XX是你找到的YY之一"
-- "如果ZZ符合条件的话"
-- 任何用假设性语言连接两个网站的表述
+**2. Hypothetical linking** — Forcing two sites together with "assume/if XX is YY"
+```
+[WRONG] "I plan to attend CVPR conference in San Francisco in June 2025 (assuming CVPR is one of the conferences you found), help me search on Eventbrite..."
 
-**正确做法**：信息流必须是确定性的
-- ✓ "根据你在OpenReview找到的会议，查询该会议的举办城市和日期，然后在Eventbrite搜索该城市同期的学术活动"
+Problem: "Assuming" indicates subsequent operation inputs are not dynamically obtained from previous steps, but preset by the designer
+Skip test: Skip the earlier conference search, I still know to go to San Francisco in June
 ```
 
-**3. 任务拆分** — 表面上有关联，实际是两个独立任务
-```
-❌ "去Getty找3个古希腊陶罐的信息，
-    然后去YouTube找Getty Villa博物馆的导览视频"
+**Prohibited patterns:**
+- "Assuming XX is one of the YY you found"
+- "If ZZ meets the conditions"
+- Any expression connecting two sites with hypothetical language
 
-问题：找陶罐和找导览视频是两件独立的事，只是都和Getty有关
-跳过测试：跳过Getty陶罐那步，我照样知道要搜"Getty Villa导览"
+**Correct approach**: Information flow must be deterministic
+- [CORRECT] "Based on the conference you found on OpenReview, query the hosting city and date, then search Eventbrite for academic events in that city during the same period"
+
+**3. Task splitting** — Superficially related, actually two independent tasks
+```
+[WRONG] "Find information on 3 ancient Greek pottery pieces at Getty,
+    then find Getty Villa museum tour videos on YouTube"
+
+Problem: Finding pottery and finding tour videos are two independent things, just both related to Getty
+Skip test: Skip the Getty pottery step, I still know to search "Getty Villa tour"
 ```
 
-**4. 孤立输出** — 某个网站的产出查完就完了，不影响后续
+**4. Isolated outputs** — One site's output is checked and done, doesn't affect subsequent steps
 ```
-❌ "去CDC查加州流感活动等级，
-    去WebMD找3种增强免疫力的食材，
-    去FoodNetwork用这些食材找食谱"
+[WRONG] "Check California flu activity level on CDC,
+    find 3 immunity-boosting ingredients on WebMD,
+    find recipes using these ingredients on FoodNetwork"
 
-问题：CDC流感等级查完就完了，不影响找食材，也不影响找食谱
-删除测试：删掉CDC那步，任务照样能完成
+Problem: CDC flu level is done after checking, doesn't affect finding ingredients or recipes
+Deletion test: Remove the CDC step, the task can still be completed
 ```
 
 ---
 
-**✓ 正面对照：真正的跨网站设计**
+**[POSITIVE EXAMPLES]: True cross-site design**
 ```
-✓ "去Getty找5件正在展出的希腊神话艺术品，记录展品名称和对应的神话人物，
-    然后去Bilibili为【每件展品/每个神话人物】找科普视频"
+[CORRECT] "Find 5 Greek mythology artworks currently on display at Getty, record artwork names and corresponding mythological figures,
+    then find educational videos on Bilibili for [each artwork/mythological figure]"
 
-为什么好：必须先从Getty获取具体的展品名和神话人物名，才知道去Bilibili搜什么
-跳过测试：跳过Getty，不知道该搜哪些神话人物 ✓
-```
-```
-✓ "查AccuWeather本周六降水概率和EPA的AQI，
-    如果降水>30%或AQI>50就找室内烤箱食谱，否则找户外烟熏食谱"
-
-为什么好：天气数据决定了后续搜哪类食谱，是真正的条件分支
-删除测试：删掉天气查询，不知道该选室内还是户外方案 ✓
+Why good: Must first obtain specific artwork names and mythological figure names from Getty before knowing what to search on Bilibili
+Skip test: Skip Getty, don't know which mythological figures to search for [PASS]
 ```
 ```
-✓ "去Eventbrite找迈阿密周末的电子音乐活动，记录场馆地址和开始时间，
-    然后去Google Flights找在活动开始前4小时落地的航班，
-    最后去Airbnb找【活动场馆】附近的房源"
+[CORRECT] "Check Saturday's precipitation probability on AccuWeather and AQI on EPA,
+    if precipitation > 30% or AQI > 50, find indoor oven recipes, otherwise find outdoor BBQ recipes"
 
-为什么好：活动地址决定了搜哪里的航班和住宿，时间决定了航班筛选条件
-跳过测试：跳过Eventbrite，不知道场馆在哪、活动几点开始 ✓
+Why good: Weather data determines which recipe category to search next, true conditional branching
+Deletion test: Remove weather query, don't know whether to choose indoor or outdoor plan [PASS]
+```
+```
+[CORRECT] "Find weekend electronic music events in Miami on Eventbrite, record venue addresses and start times,
+    then find flights on Google Flights landing 4 hours before the event starts,
+    finally find accommodations near [event venue] on Airbnb"
+
+Why good: Event address determines where to search for flights and accommodations, time determines flight filter conditions
+Skip test: Skip Eventbrite, don't know venue location or event start time [PASS]
 ```
 
-### 3.2 信息流模式
+### 3.2 Information Flow Patterns
 
-| 模式 | 图示 | 说明 | 典型场景 |
-|-----|------|------|---------|
-| 串行依赖 | A → B | A的输出作为B的输入 | 社区推荐 → 电商查询 |
-| 逆向验证 | B ← A | B产出候选，A进行验证 | 热销商品 → 社区口碑 |
-| 并行对比 | A ∥ B | 同一目标跨平台对比 | 多平台比价 |
-| 发散展开 | A → (B₁, B₂) | A产出多目标，分别处理 | 多个推荐 → 逐一验证 |
-| 多源聚合 | (A₁, A₂) → B | 多来源汇总后处理 | 多平台信息 → 统一决策 |
-| 链式传递 | A → B → C | 信息逐层加工 | 论文 → 代码 → 社区评价 |
-| 交叉验证 | A ↔ B | 双向验证 | 官方描述 ↔ 用户评价 |
-| 单网站 | A | 单网站内复杂操作 | 复杂筛选、多步骤流程 |
-| 集团内并行 | A₁ ∥ A₂ ∥ A₃ | 同集团多网站对比 | 三平台比价、多源文献检索 |
-| 混合模式 | A → (B₁ ∥ B₂) → C | 串行+并行组合 | 需求确认→多平台搜索→结果汇总 |
-| 复合模式 | A → B → (C₁, C₂) | 链式传递后发散 | 论文→代码→多平台验证 |
-| 主干+官网 | A → B + (官网₁, 官网₂...) | 主流程+官网附加 | 电商筛选→各品牌官网验证 |
+| Pattern | Diagram | Description | Typical Scenarios |
+|---------|---------|-------------|------------------|
+| Sequential | A → B | A's output feeds B's input | Community recommendation → E-commerce query |
+| Reverse verification | B ← A | B produces candidates, A verifies | Bestselling products → Community reputation |
+| Parallel comparison | A ∥ B | Same goal compared across platforms | Multi-platform price comparison |
+| Fan-out expansion | A → (B₁, B₂) | A produces multiple targets, processed separately | Multiple recommendations → Individual verification |
+| Multi-source aggregation | (A₁, A₂) → B | Multiple sources summarized then processed | Multi-platform information → Unified decision |
+| Chain transmission | A → B → C | Information progressively refined | Paper → Code → Community evaluation |
+| Cross-verification | A ↔ B | Bidirectional verification | Official description ↔ User reviews |
+| Single-site | A | Complex operations within single site | Complex filtering, multi-step processes |
+| Intra-cluster parallel | A₁ ∥ A₂ ∥ A₃ | Same cluster multi-site comparison | Three-platform price comparison, multi-source literature search |
+| Mixed mode | A → (B₁ ∥ B₂) → C | Serial + parallel combination | Requirement confirmation → Multi-platform search → Result summary |
+| Composite mode | A → B → (C₁, C₂) | Chain transmission followed by fan-out | Paper → Code → Multi-platform verification |
+| Backbone + official | A → B + (Official₁, Official₂...) | Main workflow + official site additions | E-commerce screening → Brand official site verification |
 
-### 3.3 信息流方向
+### 3.3 Information Flow Directions
 
-| 方向 | 语义 |
-|------|------|
-| A → B | A提供目标/需求，B提供解决方案/详情 |
-| B → A | B提供候选，A验证/筛选 |
-| A ↔ B | 双向验证，互为参照 |
-| A + B → C | 多源聚合后统一处理 |
-| A → B → C | 信息逐层加工传递 |
+| Direction | Semantics |
+|-----------|-----------|
+| A → B | A provides target/requirement, B provides solution/details |
+| B → A | B provides candidates, A verifies/filters |
+| A ↔ B | Bidirectional verification, mutual reference |
+| A + B → C | Multi-source aggregation then unified processing |
+| A → B → C | Information progressively refined and transmitted |
 
-### 3.4 模式选择参考
+### 3.4 Pattern Selection Reference
 
-| 需求类型 | 推荐模式 |
-|---------|---------|
-| 寻找最优选项 | 发散展开 |
-| 价格/信息对比 | 并行对比 |
-| 可靠性验证 | 交叉验证 |
-| 基于线索查找 | 串行依赖 |
-| 全面信息收集 | 多源聚合 |
-| 多步骤调研 | 链式传递 |
-| 复杂单站操作 | 单网站 |
+| Requirement Type | Recommended Pattern |
+|-----------------|-------------------|
+| Finding optimal option | Fan-out expansion |
+| Price/information comparison | Parallel comparison |
+| Reliability verification | Cross-verification |
+| Finding based on clues | Sequential dependency |
+| Comprehensive information collection | Multi-source aggregation |
+| Multi-step research | Chain transmission |
+| Complex single-site operations | Single-site |
 
 ---
 
-## 4. 信息传递规范
+## 4. Information Transfer Specifications
 
-### 4.1 动态获取原则
+### 4.1 Dynamic Acquisition Principle
 
-信息传递物必须是**任务执行过程中动态获取**的，而非**任务开始时已知**的。
+Information transfer objects must be **dynamically obtained during task execution**, not **known at task start**.
 
-| 模式 | 传递物要求 |
-|------|-----------|
-| 串行依赖 A→B | A的输出必须是动态获取的 |
-| 逆向验证 B←A | B的候选必须是动态获取的 |
-| 并行对比 A∥B | 各平台信息必须是动态获取的 |
-| 发散展开 A→(B₁,B₂) | A产出的多个目标必须是动态获取的 |
-| 多源聚合 (A₁,A₂)→B | 各来源信息必须是动态获取的 |
-| 链式传递 A→B→C | 每步输出必须是动态获取的 |
-| 交叉验证 A↔B | 验证信息必须是动态获取的 |
+| Pattern | Transfer Object Requirements |
+|---------|----------------------------|
+| Sequential A→B | A's output must be dynamically obtained |
+| Reverse verification B←A | B's candidates must be dynamically obtained |
+| Parallel comparison A∥B | Information from each platform must be dynamically obtained |
+| Fan-out A→(B₁,B₂) | Multiple targets produced by A must be dynamically obtained |
+| Multi-source (A₁,A₂)→B | Information from each source must be dynamically obtained |
+| Chain A→B→C | Each step's output must be dynamically obtained |
+| Cross-verification A↔B | Verification information must be dynamically obtained |
 
-### 4.2 伪依赖识别
+### 4.2 Pseudo-dependency Identification
 
-**检验方法**：将传递物单独提取，判断其是否需要执行前置步骤才能获得。
+**Test method**: Extract the transfer object alone and judge whether executing the previous step is needed to obtain it.
 
-| 示例 | 判断 | 原因 |
-|------|------|------|
-| "使用从Reddit获取的书名搜索Amazon" | ✓ 有效 | 书名需动态获取 |
-| "基于Santa Monica区域搜索餐厅" | ✗ 无效 | 地名是预设条件 |
-| "用从Airbnb获取的具体地址搜附近设施" | ✓ 有效 | 地址需动态获取 |
+| Example | Judgment | Reason |
+|---------|----------|--------|
+| "Use book titles obtained from Reddit to search Amazon" | [VALID] Valid | Book titles need dynamic acquisition |
+| "Search for restaurants based on Santa Monica area" | [INVALID] Invalid | Location name is preset condition |
+| "Use specific addresses obtained from Airbnb to search nearby facilities" | [VALID] Valid | Addresses need dynamic acquisition |
 
-### 4.3 用户已知 vs AI获取
+### 4.3 User Known vs. AI Acquired
 
-| 场景 | 用户应已知 | AI应获取 |
-|------|-----------|---------|
-| 寻找替代品 | 当前选项及不满原因 | 替代选项及信息 |
-| 比价 | 目标商品 | 各平台价格 |
-| 验证信息 | 待验证内容 | 验证结果 |
-| 获取评价 | 目标产品/服务 | 评价内容 |
-
----
-
-## 5. 必要性检验
-
-### 5.1 跨网站必要性
-
-设计完成后，使用以下检验项确认有效性：
-
-| 检验项 | 期望结果 |
-|--------|---------|
-| 单一网站能否完成任务 | 否 |
-| 各网站信息是否存在关联 | 是 |
-| 最终产出是否利用了多网站信息 | 是 |
-| 每个网站是否提供独有信息 | 是 |
-| 信息是否真正流向下一步 | 是 |
-
-### 5.2 单网站任务的合理性
-
-如果设计为单网站任务，需确认：
-
-| 检验项 | 期望结果 |
-|--------|---------|
-| 单网站内操作是否足够复杂 | 是 |
-| 是否涉及多步骤流程 | 是 |
-| 是否需要筛选/对比/提取等操作 | 是 |
-| 任务是否自然、不牵强 | 是 |
-
-### 5.3 常见问题模式
-
-| 问题类型 | 错误示例 | 问题分析 |
-|---------|---------|---------|
-| 并行无关联 | "在YouTube搜视频，在Bilibili也搜视频，分别记录" | 两任务无关联 |
-| 使用公知信息 | "在arXiv查Transformer作者，然后搜索该作者" | 作者名为公知信息 |
-| 独有性不足 | "在A网站了解背景，在B网站操作" | "背景"无具体传递值 |
-| 伪依赖 | "在Airbnb找Santa Monica房源，然后搜Santa Monica餐厅" | 地名非动态获取 |
-| 传递物模糊 | "基于电影背景进行搜索" | 无具体可传递值 |
+| Scenario | User Should Know | AI Should Acquire |
+|----------|-----------------|------------------|
+| Finding alternatives | Current options and dissatisfaction reasons | Alternative options and information |
+| Price comparison | Target product | Prices on each platform |
+| Information verification | Content to be verified | Verification results |
+| Obtaining reviews | Target product/service | Review content |
 
 ---
 
-## 6. 粒度控制
+## 5. Necessity Verification
 
-### 6.1 任务提议阶段应定义
+### 5.1 Cross-Site Necessity
 
-- 用户身份与场景
-- 问题痛点与决策目标
-- 涉及网站及其必要性
-- 信息流动方向
-- 核心产出方向
-- 涉及**核心网站**的具体列表（必须明确，不可用"某电商平台"等模糊表述）
-- 每个核心网站的**功能角色**（信息源/验证方/操作目标等）
-- 预期的**功能点覆盖**（宁多勿少，下游会筛选）
-- **官网类附加网站**的说明（如有，标注其作用，如"查官网价格""获取官方课程表链接"）
-- 官网类网站只需简单描述用途，无需列出具体复杂项
+After design completion, use the following checklist to confirm effectiveness:
 
-### 6.2 应留给任务完善阶段
+| Check Item | Expected Result |
+|-----------|----------------|
+| Can a single website complete the task | No |
+| Is there correlation between website information | Yes |
+| Does final output utilize multi-site information | Yes |
+| Does each website provide unique information | Yes |
+| Does information truly flow to the next step | Yes |
 
-- 具体筛选条件（如"1星差评"）
-- 具体数量要求（如"前3个"）
-- 具体操作表述（如"翻页"、"展开"）
-- 具体输出格式
+### 5.2 Single-Site Task Rationality
 
-### 6.3 粒度示例
+If designed as a single-site task, confirm:
 
-| 粒度 | 示例 | 评估 |
-|------|------|------|
-| 过细 | "获取Reddit点赞最高评论的书名 → 用书名在Amazon搜索获取价格和最新1星差评" | ✗ 下游无调整空间 |
-| 适中 | "从开发者社区获取推荐 → 在电商获取购买决策信息" | ✓ 保留方向不锁定细节 |
-| 过粗 | "社区 → 电商" | ✗ 无法指导任务完善 |
+| Check Item | Expected Result |
+|-----------|----------------|
+| Are operations within the single site sufficiently complex | Yes |
+| Does it involve multi-step processes | Yes |
+| Does it require filtering/comparison/extraction operations | Yes |
+| Is the task natural, not forced | Yes |
+
+### 5.3 Common Problem Patterns
+
+| Problem Type | Wrong Example | Problem Analysis |
+|-------------|--------------|-----------------|
+| Parallel without correlation | "Search for videos on YouTube, also search on Bilibili, record separately" | Two tasks unrelated |
+| Using common knowledge | "Check Transformer authors on arXiv, then search for those authors" | Author names are common knowledge |
+| Insufficient uniqueness | "Learn background on site A, operate on site B" | "Background" has no specific transfer value |
+| Pseudo-dependency | "Find Santa Monica listings on Airbnb, then search Santa Monica restaurants" | Location name not dynamically obtained |
+| Vague transfer objects | "Search based on movie background" | No specific transferable value |
 
 ---
 
-## 7. 输出格式
+## 6. Granularity Control
 
-请输出JSON数组：
+### 6.1 Task Proposal Phase Should Define
+
+- User identity and scenario
+- Problem pain points and decision goals
+- Involved websites and their necessity
+- Information flow direction
+- Core output direction
+- Specific list of **core websites** involved (must be explicit, cannot use vague expressions like "some e-commerce platform")
+- **Functional roles** of each core website (information source/verifier/operation target, etc.)
+- Expected **function point coverage** (better to list more, downstream will filter)
+- Description of **official website additions** (if any,标注 their purpose, e.g., "check official prices" "obtain official course schedule links")
+- Official sites only need brief purpose descriptions, no need to list specific complex items
+
+### 6.2 Should Leave for Task Refinement Phase
+
+- Specific filter conditions (e.g., "1-star negative reviews")
+- Specific quantity requirements (e.g., "top 3")
+- Specific operation expressions (e.g., "翻页" "expand")
+- Specific output formats
+
+### 6.3 Granularity Examples
+
+| Granularity | Example | Assessment |
+|------------|---------|-----------|
+| Too fine | "Get book title from highest-voted Reddit comment → Use title to search Amazon for price and latest 1-star negative review" | [NO] No adjustment space for downstream |
+| Appropriate | "Get recommendations from developer community → Obtain purchase decision information on e-commerce" | [YES] Preserves direction without locking details |
+| Too coarse | "Community → E-commerce" | [NO] Cannot guide task refinement |
+
+---
+
+## 7. Output Format
+
+Please output a JSON array:
 
 ```json
 [
   {
     "task_id": "PROP-XXX",
-    "title": "简短标题（10字以内）",
+    "title": "Short title (within 10 characters)",
     
     "user_scenario": {
-      "persona": "用户身份（使用具体职业角色，可参考1.5节但不限于此，如'跨境电商选品员''LinkedIn猎头''小红书账号运营'）",
-      "situation": "需求情境（可参考1.6节但不限于此，描述具体需求场景，如'竞品调研：需要分析3个竞品账号的内容策略'）",
-      "pain_point": "用户痛点（从1.7节选择痛点类型+具体表现，如'跨平台切换+重复操作：需要在3个平台反复切换，每个账号手动记录约5分钟，共需1小时'）",
-      "decision_goal": "决策目标（从1.8节选择目标类型+可验证的产出，可包含多个目标，如'完成整理：输出竞品分析Excel表格（含10个账号×8个指标）；选定方案：推荐最值得学习的3个账号'）"
+      "persona": "User identity (use specific professional roles, refer to section 1.5 but not limited to, e.g., 'cross-border e-commerce product selector', 'LinkedIn headhunter', 'Xiaohongshu account manager')",
+      "situation": "Demand situation (refer to section 1.6 but not limited to, describe specific demand scenarios, e.g., 'Competitor research: need to analyze content strategies of 3 competitor accounts')",
+      "pain_point": "User pain point (select pain point type + specific manifestation from section 1.7, e.g., 'Cross-platform switching + repetitive operations: need to switch between 3 platforms repeatedly, manually record each account taking about 5 minutes, total 1 hour')",
+      "decision_goal": "Decision goal (select goal type + verifiable output from section 1.8, may include multiple goals, e.g., 'Complete organization: output competitor analysis Excel table (10 accounts × 8 indicators); Select solution: recommend 3 most worthwhile accounts to learn from')"
     },
     
     "information_need": {
-      "user_already_knows": "用户已知信息",
-      "ai_should_get": "AI需获取的信息方向",
-      "information_flow": "信息流动描述",
-      "why_cross_site": "跨网站必要性说明（如为单网站任务则说明原因）"
+      "user_already_knows": "Information user already knows",
+      "ai_should_get": "Information direction AI needs to acquire",
+      "information_flow": "Information flow description",
+      "why_cross_site": "Explanation of cross-site necessity (if single-site task, explain reason)"
     },
     
     "core_output_direction": {
-      "output_type": "产出类型/方向",
-      "value": "产出的决策价值",
-      "verifiability_hint": "验证思路（供下游参考）"
+      "output_type": "Output type/direction",
+      "value": "Decision value of output",
+      "verifiability_hint": "Verification思路 (for downstream reference)"
     },
     
     "complexity_potential": {
-      "operation_directions": ["可能的操作方向"],
-      "perception_directions": ["可能的感知方向"]
+      "operation_directions": ["Possible operation directions"],
+      "perception_directions": ["Possible perception directions"]
     },
     
     "left_for_refinement": [
-      "留给下游的具体项"
+      "Specific items left for downstream"
     ],
     
     "reality_check": {
-      "would_i_want_this": "自我检验：是否真实需要",
-      "manual_effort": "手动操作耗时及繁琐点"
+      "would_i_want_this": "Self-check: whether genuinely needed",
+      "manual_effort": "Manual operation time consumption and tedious points"
     },
     
     "metadata": {
-      "cross_site_pattern": "串行依赖 | 并行对比 | 交叉验证 | 发散展开 | 多源聚合 | 链式传递 | 逆向验证 | 单网站 | 集团内并行 | 混合模式 | 主干+官网",
-      "clusters_used": ["功能集团1", "功能集团2"],
-      "websites_involved": ["网站1", "网站2", "网站3"],
-      "websites_per_cluster": {"集团1": ["网站1", "网站2"], "集团2": ["网站3"]},
+      "cross_site_pattern": "sequential | parallel | cross-verification | fan-out | multi-source | chain | reverse-verification | single-site | intra-cluster-parallel | mixed | backbone-plus-official",
+      "clusters_used": ["functional cluster 1", "functional cluster 2"],
+      "websites_involved": ["website1", "website2", "website3"],
+      "websites_per_cluster": {"cluster1": ["website1", "website2"], "cluster2": ["website3"]},
       "function_points": ["xxx.com:F1", "xxx.com:F2", "xxx.com:F3", "yyy.com:F1", "yyy.com:F2"],
       "estimated_complexity": "low | medium | high",
-      "chain_depth": "信息链跳数（2/3/4）",
-      "is_rule_driven_planning": "是否为规则驱动的复杂规划任务（true/false）"
+      "chain_depth": "Information chain hop count (2/3/4)",
+      "is_rule_driven_planning": "Whether it's a rule-driven complex planning task (true/false)"
     }
   }
 ]
 ```
-**⚠️ JSON格式强制要求（违反将导致解析失败）：**
 
-1. **禁止末尾逗号**：对象 `{}` 或数组 `[]` 的最后一个元素后**绝对不能有逗号**
-   - 错误：`"decision_goal": "xxx",` ← 后面紧跟 `}`
-   - 正确：`"decision_goal": "xxx"` ← 最后一个字段无逗号
+**⚠️ Mandatory JSON Format Requirements (violations will cause parsing failures):**
 
-2. **禁止注释**：JSON不支持 `//` 或 `/* */` 注释，任何注释都会导致解析失败
+1. **No trailing commas**: The last element in objects `{}` or arrays `[]` **must absolutely NOT have a comma**
+   - Wrong: `"decision_goal": "xxx",` ← followed by `}`
+   - Correct: `"decision_goal": "xxx"` ← last field has no comma
 
-3. **特别注意 `user_scenario` 对象**：其最后一个字段 `decision_goal` 后**绝对不能有逗号**
+2. **No comments**: JSON does not support `//` or `/* */` comments; any comments will cause parsing failure
 
-### function_points 填写要求
+3. **Pay special attention to `user_scenario` object**: The last field `decision_goal` **must absolutely NOT have a comma** after it
 
-**必须覆盖任务执行全过程中可能涉及的所有功能点**，不仅是显式提及的，还包括隐含必需的。
-**官网类附加网站的功能点不列** 仅在任务提议中模糊描述，不需要在"websites_involved"、"websites_per_cluster"和"function_points"中体现。
-**判断方法**：想象AI实际执行任务的完整过程，每一步会触发哪些功能？
+### Function Points Filling Requirements
 
-| 任务片段              | 遗漏写法   | 正确写法                        |
-|-------------------|--------|-----------------------------|
-| "去YouTube找一个讲解视频" | F1(搜索) | F1(搜索) + F2(播放)             |
-| "看看评论区怎么说"        | F1(搜索) | F1(搜索) + F2(播放) + F5(互动/评论) |
+**Must cover all function points potentially involved in the entire task execution process**, not just explicitly mentioned ones, but also implicitly necessary ones.
+**Official website additions' function points are NOT listed**—only vaguely described in task proposals, no need to reflect in "websites_involved", "websites_per_cluster", and "function_points".
+**Judgment method**: Imagine the complete process of AI actually executing the task—which functions will be triggered at each step?
 
-宁可多列，下游会筛选。
+| Task Fragment | Omitted Writing | Correct Writing |
+|--------------|----------------|----------------|
+| "Go to YouTube to find an explanation video" | F1(search) | F1(search) + F2(playback) |
+| "See what the comments section says" | F1(search) | F1(search) + F2(playback) + F5(interaction/comments) |
 
-### 字段说明
+Better to list more; downstream will filter.
 
-| 字段 | 说明 |
-|------|------|
-| task_id | 任务唯一标识 |
-| title | 简短标题 |
-| user_scenario | 用户画像：身份、情况、痛点、目标 |
-| information_need | 信息需求：已知/待获取信息、流向、跨站原因 |
-| core_output_direction | 产出方向：类型、价值、验证思路 |
-| complexity_potential | 复杂度潜力：操作/感知扩展方向 |
-| left_for_refinement | 下游细化项：明确列出保留项 |
-| reality_check | 真实性检验：自我验证 |
-| metadata | 元信息：模式、集团、网站、功能点、复杂度 |
+### Field Descriptions
 
----
-
-## 8. 批量生成要求
-
-| 维度 | 要求                                                                                                                       |
-|------|--------------------------------------------------------------------------------------------------------------------------|
-| 场景多样性 | 覆盖不同用户群体                                                                                                                 |
-| 网站多样性 | 避免重复相同网站组合                                                                                                               |
-| 需求多样性 | 涵盖比价、推荐、验证、替代等类型                                                                                                         |
-| 复杂度分布 | 包含low/medium/high各级别                                                                                                     |
-| 网站数量分布 | 包含单网站、双网站、多网站任务                                                                                                          |
-| 实例新颖性 | 设计前先用搜索工具查找当前热门/潮流的实体，确保实体足够火、时尚、近期关注度高，能在目标网站上查到相关内容。若实体可能找不到，需预设兜底指令（如"若未找到则说明原因并推荐替代"）。组合使用多个实体以增加新颖性（如对比3个城市而非只用1个）。 |
+| Field | Description |
+|-------|-------------|
+| task_id | Task unique identifier |
+| title | Short title |
+| user_scenario | User profile: identity, situation, pain points, goals |
+| information_need | Information needs: known/to-be-acquired information, flow, cross-site reasons |
+| core_output_direction | Output direction: type, value, verification思路 |
+| complexity_potential | Complexity potential: operation/perception expansion directions |
+| left_for_refinement | Downstream refinement items: clearly list reserved items |
+| reality_check | Reality check: self-verification |
+| metadata | Meta information: pattern, clusters, websites, function points, complexity |
 
 ---
 
-## 9. 自检清单
+## 8. Batch Generation Requirements
 
-### 真实性检验
-- [ ] 该任务解决什么真实问题
-- [ ] 是否存在实际用户群体
-- [ ] 手动完成是否确实繁琐
-- [ ] **需求是否"令人兴奋"**（不只是逻辑合理，而是让人觉得"AI帮我做这个太好了"）
-
-### AI浏览器适用性检验
-- [ ] **这个任务是否需要实际操作网站**（筛选、排序、翻页、提取特定信息）
-- [ ] **不是普通搜索就能解决的问题**（不是"随便搜一下就有"的公开信息）
-- [ ] 需要确认动态状态或进行实际交互
-
-### 合理性检验
-- [ ] 跨网站是解决问题的必要条件（或单网站操作足够复杂）
-- [ ] 信息流动是自然产生的
-- [ ] 无伪依赖
-- [ ] 没有为了跨网站而牵强设计
-- [ ] **读起来不突兀**（即使是并行需求也要自然）
-
-### 边界检验
-- [ ] 用户"已知"与"待获取"划分正确
-- [ ] 未将用户应知信息设为AI获取目标
-
-### 粒度检验
-- [ ] 为下游保留了足够调整空间
-- [ ] left_for_refinement已列出保留项
-- [ ] 未定死筛选条件、数量、操作表述
-
-### 复杂度潜力检验
-- [ ] 涉及网站数量是否≥3（核心网站+官网合计）
-- [ ] 核心网站（有复杂操作的）数量是否≥2
-- [ ] 是否考虑了同集团内多网站协作的可能
-- [ ] 信息链深度是否≥3跳
-- [ ] function_points数量是否≥8
-- [ ] 每个核心网站是否有明确的功能角色
-- [ ] 是否为规则驱动的复杂规划任务（如是，额外加分）
-- [ ] 官网类附加是否自然融入主流程（而非强行添加）
-
-### 事实核查
-- [ ] **是否已用搜索工具确认选用实体的时效性和可查性**，当前时间是2025年12月，不要弄太过时的要素
-- [ ] 任务中涉及的具体实体是否存在常识性错误（如：纯音乐作品被当作有歌词的歌曲）
-- [ ] 任务中假设的功能/内容在目标网站上是否真实存在
-- [ ] 任务逻辑是否符合领域常识
-- [ ] 若实体可能在网站上找不到，是否有兜底指令
+| Dimension | Requirements |
+|-----------|-------------|
+| Scenario diversity | Cover different user groups |
+| Website diversity | Avoid repeating the same website combinations |
+| Requirement diversity | Cover price comparison, recommendation, verification, substitution, etc. |
+| Complexity distribution | Include low/medium/high levels |
+| Website count distribution | Include single-site, two-site, multi-site tasks |
+| Instance novelty | Before designing, use search tools to find currently trending/hot entities, ensuring entities are popular, fashionable, with recent high attention, and relevant content can be found on target websites. If entities might not be found, preset fallback instructions (e.g., "if not found, explain reason and recommend alternatives"). Combine multiple entities to increase novelty (e.g., compare 3 cities rather than just 1). |
 
 ---
 
-## 10. 示例（部分信息）
+## 9. Self-Check Checklist
 
-### 10.1 好的任务：HuggingFace → arXiv → B站
+### Authenticity Check
+- [ ] What real problem does this task solve
+- [ ] Whether there is an actual user group
+- [ ] Whether manual completion is indeed tedious
+- [ ] **Is the demand "exciting"** (not just logically reasonable, but makes people think "it's great that AI helps me with this")
+
+### AI Browser Applicability Check
+- [ ] **Does this task require actual website operations** (filtering, sorting, pagination, extracting specific information)
+- [ ] **Not a problem solvable by ordinary search** (not "just search and get it" public information)
+- [ ] Needs to confirm dynamic states or perform actual interactions
+
+### Rationality Check
+- [ ] Cross-site is a necessary condition for solving the problem (or single-site operations are sufficiently complex)
+- [ ] Information flow occurs naturally
+- [ ] No pseudo-dependencies
+- [ ] No forced design just for cross-site
+- [ ] **Reads naturally** (even parallel requirements should feel natural)
+
+### Boundary Check
+- [ ] User "known" vs. "to-be-acquired" division is correct
+- [ ] Did not set information users should know as AI acquisition targets
+
+### Granularity Check
+- [ ] Reserved sufficient adjustment space for downstream
+- [ ] left_for_refinement has listed reserved items
+- [ ] Did not lock in filter conditions, quantities, operation expressions
+
+### Complexity Potential Check
+- [ ] Whether the number of involved websites is ≥3 (core websites + official sites combined)
+- [ ] Whether the number of core websites (with complex operations) is ≥2
+- [ ] Whether intra-cluster multi-site collaboration possibilities were considered
+- [ ] Whether information chain depth is ≥3 hops
+- [ ] Whether function_points count is ≥8
+- [ ] Whether each core website has a clear functional role
+- [ ] Whether it's a rule-driven complex planning task (if yes, extra points)
+- [ ] Whether official website additions are naturally integrated into the main workflow (rather than forcibly added)
+
+### Fact Checking
+- [ ] **Whether search tools have been used to confirm entity timeliness and discoverability**; current time is December 2025, avoid using outdated elements
+- [ ] Whether specific entities involved in the task have common sense errors (e.g., pure instrumental music treated as songs with lyrics)
+- [ ] Whether functions/content assumed in the task actually exist on target websites
+- [ ] Whether task logic conforms to domain common sense
+- [ ] If entities might not be found on websites, whether there are fallback instructions
+
+---
+
+## 10. Examples (Partial Information)
+
+### 10.1 Good Task: HuggingFace → arXiv → Bilibili
 
 ```json
 {
-  "title": "深度估计论文解读",
+  "title": "Depth Estimation Paper Explanation",
   
   "user_scenario": {
-    "persona": "关注计算机视觉的研究者/学习者",
-    "situation": "想深入了解深度估计领域的主流模型，但直接看论文太枯燥",
-    "pain_point": "需要先在HF找模型、再找论文、再去B站筛选有深度的讲解，流程繁琐",
-    "decision_goal": "找到一个有深度的视频讲解来学习"
+    "persona": "Researcher/learner focusing on computer vision",
+    "situation": "Want to deeply understand mainstream models in depth estimation field, but reading papers directly is too dry",
+    "pain_point": "Need to first find models on HF, then find papers, then filter in-depth explanations on Bilibili, tedious process",
+    "decision_goal": "Find an in-depth video explanation for learning"
   },
   
   "information_need": {
-    "user_already_knows": "感兴趣的领域（深度估计）",
-    "ai_should_get": "最热门模型 → 对应论文 → 高质量讲解视频",
-    "information_flow": "HuggingFace下载量筛选 → arXiv论文标题 → B站按时长和播放量筛选",
-    "why_cross_site": "模型排名在HF，论文在arXiv，中文讲解在B站，三者互补"
+    "user_already_knows": "Field of interest (depth estimation)",
+    "ai_should_get": "Most popular model → Corresponding paper → High-quality explanation video",
+    "information_flow": "HuggingFace download count filtering → arXiv paper title → Bilibili filtering by duration and view count",
+    "why_cross_site": "Model rankings on HF, papers on arXiv, Chinese explanations on Bilibili, complementary"
   },
   
   "reality_check": {
-    "would_i_want_this": "是，研究者确实会这样找学习资料",
-    "manual_effort": "约15-20分钟，需要跨三个平台操作"
+    "would_i_want_this": "Yes, researchers indeed look for learning materials this way",
+    "manual_effort": "About 15-20 minutes, requires operations across three platforms"
   }
 }
 ```
 
-**为什么好**：
-- 需求令人兴奋：研究者确实会这样找资料
-- 需要实际操作：筛选下载量、找关联论文、按时长播放量筛选——不是搜一下就有的
-- 跨网站自然：三个平台各有独有信息
+**Why good:**
+- Exciting demand: Researchers indeed look for materials this way
+- Requires actual operations: Filtering downloads, finding associated papers, filtering by duration and views—not something you get with a simple search
+- Natural cross-site: Three platforms each have unique information
 
-### 10.2 好的任务：StackOverflow → GitHub（技术问题追溯）
+### 10.2 Good Task: StackOverflow → GitHub (Technical Issue Tracing)
 
 ```json
 {
-  "title": "Homebrew报错追溯",
+  "title": "Homebrew Error Tracing",
   
   "user_scenario": {
-    "persona": "遇到Homebrew报错的开发者",
-    "situation": "更新时遇到'shallow clone'报错，想确认官方态度",
-    "pain_point": "SO上有解答但想追溯到官方Issue确认现状",
-    "decision_goal": "确认官方是否已解决，决定是否需要手动处理"
+    "persona": "Developer encountering Homebrew errors",
+    "situation": "Encountered 'shallow clone' error during update, want to confirm official stance",
+    "pain_point": "SO has answers but want to trace to official Issue to confirm current status",
+    "decision_goal": "Confirm whether officially resolved, decide whether manual handling is needed"
   },
   
   "information_need": {
-    "user_already_knows": "报错信息（shallow clone）",
-    "ai_should_get": "SO高票回答 → 官方Issue链接 → Issue当前状态",
-    "information_flow": "StackOverflow找解答 → 追溯到GitHub Issue → 确认状态",
-    "why_cross_site": "解决方案在SO，官方状态在GitHub，需要追溯确认"
+    "user_already_knows": "Error message (shallow clone)",
+    "ai_should_get": "SO high-vote answer → Official Issue link → Issue current status",
+    "information_flow": "StackOverflow find solution → Trace to GitHub Issue → Confirm status",
+    "why_cross_site": "Solutions on SO, official status only on GitHub, need tracing confirmation"
   },
   
   "reality_check": {
-    "would_i_want_this": "是，开发者确实需要追溯到官方确认",
-    "manual_effort": "约5-10分钟，需要跨平台追溯"
+    "would_i_want_this": "Yes, developers indeed need to trace to official sources for confirmation",
+    "manual_effort": "About 5-10 minutes, requires cross-platform tracing"
   }
 }
 ```
 
-**为什么好**：
-- 真实问题：开发者确实会遇到
-- 需要操作：找高票回答、追溯链接、确认动态状态
-- 跨网站必要：SO有解答，但官方状态只有GitHub有
+**Why good:**
+- Real problem: Developers indeed encounter this
+- Requires operations: Find high-vote answers, trace links, confirm dynamic status
+- Cross-site necessary: SO has solutions, but official status only on GitHub
 
-### 10.3 坏的任务：Coursera → StackOverflow（需求牵强）
-
-```
-场景：想学数据分析，看Coursera课程教什么库，然后去SO数每个库的提问数
-
-问题：
-1. 需求不令人兴奋——谁会通过数提问数来决定学不学一个库？
-2. 感觉生硬、牵强——逻辑上能说通，但不是真实用户行为
-3. 即使做出来，这个"提问数"对决策有多大价值？
-```
-
-### 10.4 坏的任务：YouTube → Fandom → IMDb（搜一下就有）
+### 10.3 Bad Task: Coursera → StackOverflow (Far-fetched Requirement)
 
 ```
-场景：看了预告片想知道反派是谁、和X教授什么关系、谁演的
+Scenario: Want to learn data analysis, see what libraries Coursera courses teach, then go to SO to count questions for each library
 
-问题：
-1. 这是Deep Research/普通搜索就能解决的——搜"Deadpool Wolverine 反派"全都有
-2. 不需要AI浏览器的操作能力
-3. 信息是公开的事实，不需要筛选、对比、确认状态
+Problems:
+1. Unexciting demand—who would decide whether to learn a library by counting question numbers?
+2. Feels stiff and forced—logically makes sense, but not real user behavior
+3. Even if done, how much value does this "question count" have for decision-making?
 ```
 
-### 10.5 还行的任务：Wikipedia + GitHub（并行但不突兀）
+### 10.4 Bad Task: YouTube → Fandom → IMDb (Search Gets It All)
+
+```
+Scenario: Watched trailer, want to know who the villain is, relationship with Professor X, who played them
+
+Problems:
+1. This is solvable by Deep Research/ordinary search—search "Deadpool Wolverine villain" and you get everything
+2. Doesn't need AI browser's operational capabilities
+3. Information is public facts, doesn't need filtering, comparison, status confirmation
+```
+
+### 10.5 Acceptable Task: Wikipedia + GitHub (Parallel but Not Abrupt)
 
 ```json
 {
-  "title": "模拟退火实现验证",
+  "title": "Simulated Annealing Implementation Verification",
   
   "user_scenario": {
-    "persona": "想实现模拟退火算法的开发者",
-    "situation": "理论细节卡住了，想确认公式并找参考实现",
-    "pain_point": "需要同时确认理论和找代码参考",
-    "decision_goal": "确认理解正确，找到可参考的代码"
+    "persona": "Developer wanting to implement simulated annealing algorithm",
+    "situation": "Stuck on theoretical details, want to confirm formula and find reference implementation",
+    "pain_point": "Need to confirm theory and find code reference simultaneously",
+    "decision_goal": "Confirm understanding is correct, find referenceable code"
   },
   
   "information_need": {
-    "user_already_knows": "想实现模拟退火，大概知道原理",
-    "ai_should_get": "公式确认（是否用exp）+ 高质量实现代码",
-    "information_flow": "Wikipedia确认公式 + GitHub找实现并验证",
-    "why_cross_site": "Wikipedia有权威定义，GitHub有实现代码，两者互相验证"
+    "user_already_knows": "Want to implement simulated annealing, roughly know the principle",
+    "ai_should_get": "Formula confirmation (whether uses exp) + High-quality implementation code",
+    "information_flow": "Wikipedia confirms formula + GitHub finds implementation and verifies",
+    "why_cross_site": "Wikipedia has authoritative definitions, GitHub has implementation code, mutual verification"
   }
 }
 ```
 
-**为什么"还行"**：
-- Wikipedia和GitHub是并行需求，不是严格串联
-- 但服务于同一个目标（理解+验证），不突兀
-- 需要实际操作：找高Star项目、进入目录找特定文件、验证代码内容
+**Why "acceptable":**
+- Wikipedia and GitHub are parallel requirements, not strictly chained
+- But serve the same goal (understanding + verification), not abrupt
+- Requires actual operations: Find high-Star projects, enter directories to find specific files, verify code content
