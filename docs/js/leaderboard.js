@@ -13,7 +13,7 @@ const METRIC_COLS = [
 
 const EXTRA_COLS = [
   { key: "time_min", label: "Time (min)", sortable: true, format: (v) => v?.toFixed(1) ?? "—" },
-  { key: "tokens_k", label: "Output (×10³ tokens)", sortable: true, format: (v) => v?.toFixed(2) ?? "—" },
+  { key: "tokens_k", label: "Output (k tok)", sortable: true, format: (v) => v?.toFixed(1) ?? "—" },
 ];
 
 function fmtPct(v, std) {
@@ -30,16 +30,25 @@ function categoryBadge(cat) {
   return `<span class="cat-badge ${cls}">${cat}</span>`;
 }
 
+const MEDALS = ["🥇", "🥈", "🥉"];
+
 function renderRows(entries, includeExtra = true) {
   return entries.map((e, idx) => {
     const refClass = e.category === "Reference" ? "reference" : "";
-    // Apply medal class only when entries are sorted by partial_completion descending
-    // and the entry is in the top 3 of non-reference systems.
     const rankClass = (e.category !== "Reference" && idx < 3) ? `rank-${idx + 1}` : "";
     const cls = [refClass, rankClass].filter(Boolean).join(" ");
-    const rank = e.category === "Reference" ? "—" : (idx + 1);
+
+    let rankCell;
+    if (e.category === "Reference") {
+      rankCell = "—";
+    } else if (idx < 3) {
+      rankCell = `<span class="medal">${MEDALS[idx]}</span>${idx + 1}`;
+    } else {
+      rankCell = String(idx + 1);
+    }
+
     let html = `<tr class="${cls}">`;
-    html += `<td>${rank}</td>`;
+    html += `<td>${rankCell}</td>`;
     html += `<td><strong>${e.system}</strong>${categoryBadge(e.category)}</td>`;
     for (const col of METRIC_COLS) {
       html += `<td>${fmtPct(e[col.key], e[col.key + "_std"])}</td>`;
