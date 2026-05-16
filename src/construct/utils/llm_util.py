@@ -6,9 +6,9 @@ from openai import OpenAI
 
 
 class LLMService:
-    """LLM 服务工具类
+    """LLM Service utility class
     
-    封装OpenAI兼容API的对话接口，支持自动从环境变量读取配置。
+    Encapsulates OpenAI-compatible API conversation interface with automatic environment variable configuration reading.
     """
 
     _DEFAULT_MODEL = "google/gemini-3-pro"
@@ -18,14 +18,14 @@ class LLMService:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None
     ) -> None:
-        """初始化LLM服务
+        """Initialize LLM service.
         
         Args:
-            api_key: API密钥，默认从环境变量 OPENAI_API_KEY 读取
-            base_url: API基础地址，默认从环境变量 OPENAI_BASE_URL 读取
+            api_key: API key, reads from OPENAI_API_KEY environment variable by default
+            base_url: API base URL, reads from OPENAI_BASE_URL environment variable by default
             
         Raises:
-            ValueError: 当缺少 API Key 或 Base URL 时抛出。
+            ValueError: Raised when API Key or Base URL is missing.
 
         Example:
             >>> llm = LLMService()
@@ -36,8 +36,8 @@ class LLMService:
 
         if not self.api_key or not self.base_url:
             raise ValueError(
-                "LLMService 初始化失败：缺少 OPENAI_API_KEY 或 OPENAI_BASE_URL，"
-                "请设置环境变量或在初始化时传入参数"
+                "LLMService initialization failed: missing OPENAI_API_KEY or OPENAI_BASE_URL, "
+                "please set environment variables or pass parameters during initialization"
             )
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
@@ -48,24 +48,24 @@ class LLMService:
         user_prompt: str,
         model: Optional[str] = None
     ) -> str:
-        """chat接口调用
+        """Chat interface call.
         
         Args:
-            system_prompt: 系统提示词
-            user_prompt: 用户提示词
-            model: 使用的模型名称
+            system_prompt: System prompt
+            user_prompt: User prompt
+            model: Model name to use
 
         Returns:
-            模型回复内容
+            Model response content
             
         Raises:
-            RuntimeError: 当调用 LLM API 失败时抛出
+            RuntimeError: Raised when LLM API call fails
             
         Example:
             >>> llm = LLMService()
             >>> response = llm.chat(
-            ...     system_prompt="你是一个乐于助人的AI助手。",
-            ...     user_prompt="请用一句话解释人工智能是什么。",
+            ...     system_prompt="You are a helpful AI assistant.",
+            ...     user_prompt="Please explain what artificial intelligence is in one sentence.",
             ...     model="Qwen/Qwen2.5-72B-Instruct-128K"
             ... )
             >>> print(response)
@@ -73,37 +73,37 @@ class LLMService:
         model = model or self._DEFAULT_MODEL
 
         try:
-            # 构造消息列表
+            # Construct message list
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ]
             
-            # 调用 API
+            # Call API
             response = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
                 max_tokens=32768
             )
             
-            # 返回结果
+            # Return result
             return response.choices[0].message.content.strip()
         
         except Exception as e:
-            logger.exception(f"LLM 对话失败: {e}")
-            raise RuntimeError(f"调用 LLM API 失败: {e}") from e
+            logger.exception(f"LLM conversation failed: {e}")
+            raise RuntimeError(f"LLM API call failed: {e}") from e
 
 
-# 模块内部单元测试
+# Module internal unit test
 if __name__ == '__main__':
     from dotenv import load_dotenv
 
     load_dotenv()
     llm = LLMService()
 
-    # 测试chat接口
-    print("\n=== 基本对话测试 ===")
-    system_prompt = "你是一个乐于助人的AI助手。"
-    user_prompt = "请用一句话解释人工智能是什么。"
+    # Test chat interface
+    print("\n=== Basic Conversation Test ===")
+    system_prompt = "You are a helpful AI assistant."
+    user_prompt = "Please explain what artificial intelligence is in one sentence."
     response = llm.chat(system_prompt, user_prompt)
-    print(f"回复: {response}")
+    print(f"Response: {response}")
