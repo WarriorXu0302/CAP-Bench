@@ -63,7 +63,7 @@ class PathConfig:
         self.cache_root = self.project_root / "cache"
         
         # Default eval version
-        self.eval_version = "2025_07_14"
+        self.eval_version = "2026_05_16"
 
         # Scripts
         self.run_eval_script = self.project_root / "run_eval.py"
