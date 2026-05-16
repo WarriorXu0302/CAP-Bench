@@ -140,7 +140,10 @@ class SiteCardDataset:
             try:
                 with open(path, 'r', encoding=encoding) as f:
                     for row in csv.DictReader(f):
-                        for fid in row.get('对应功能点', '').split('|'):
+                        # Accept both English and legacy Chinese column names
+                        # for the "associated function ids" field.
+                        raw = row.get('function_ids') or row.get('对应功能点', '')
+                        for fid in raw.split('|'):
                             if fid:
                                 storage[f"{site_name}:{fid}"].append(parser(row))
                 # Break loop after successful reading
@@ -154,42 +157,55 @@ class SiteCardDataset:
             except Exception as e:
                 raise Exception(f"Error reading file {path}: {e}") from e
 
+    @staticmethod
+    def _row_get(row: Dict, *keys: str) -> str:
+        """Return the first non-empty value among ``keys`` in ``row``.
+
+        Used to read CSV rows tolerant of both English (canonical) and
+        legacy Chinese column names while site cards are being curated.
+        """
+        for k in keys:
+            v = row.get(k)
+            if v:
+                return v
+        return ''
+
     def _parse_action(self, row: Dict) -> Dict:
-        """Parse action item row data.
+        """Parse an action-item CSV row.
 
         Args:
-            row: CSV row dictionary.
+            row: Raw CSV row dictionary.
 
         Returns:
-            Parsed action item dictionary.
+            Parsed action-item dictionary.
         """
         return {
             'id': row['id'],
-            'category': row['组件类别'],
-            'component': row['组件名称'],
-            'action': row['操作名称'],
-            'description': row['复杂项描述'],
-            'location': row['页面位置/元素描述'],
-            'role': row['在功能点中的作用']
+            'category':    self._row_get(row, 'component_category', '组件类别'),
+            'component':   self._row_get(row, 'component_name', '组件名称'),
+            'action':      self._row_get(row, 'action_name', '操作名称'),
+            'description': self._row_get(row, 'item_description', '复杂项描述'),
+            'location':    self._row_get(row, 'location', '页面位置/元素描述'),
+            'role':        self._row_get(row, 'role', '在功能点中的作用'),
         }
 
     def _parse_perception(self, row: Dict) -> Dict:
-        """Parse perception item row data.
+        """Parse a perception-item CSV row.
 
         Args:
-            row: CSV row dictionary.
+            row: Raw CSV row dictionary.
 
         Returns:
-            Parsed perception item dictionary.
+            Parsed perception-item dictionary.
         """
         return {
             'id': row['id'],
-            'category': row['组件类别'],
-            'component': row['组件名称'],
-            'perception': row['感知名称'],
-            'description': row['复杂项描述'],
-            'location': row['页面位置/元素描述'],
-            'role': row['在功能点中的作用']
+            'category':    self._row_get(row, 'component_category', '组件类别'),
+            'component':   self._row_get(row, 'component_name', '组件名称'),
+            'perception':  self._row_get(row, 'perception_name', '感知名称'),
+            'description': self._row_get(row, 'item_description', '复杂项描述'),
+            'location':    self._row_get(row, 'location', '页面位置/元素描述'),
+            'role':        self._row_get(row, 'role', '在功能点中的作用'),
         }
 
     # ==================== Cluster Query Interface ====================
@@ -238,7 +254,7 @@ class SiteCardDataset:
             {
                 "Code Hosting": {
                     "github.com": {
-                        "github.com:F1": "项目搜索(通过关键词搜索开源项目)"
+                        "github.com:F1": "Project search(search open-source projects by keyword)"
                     }
                 }
             }
@@ -271,9 +287,9 @@ class SiteCardDataset:
             >>> dataset.get_function_details(["github.com:F1"])
             {
                 "github.com:F1": {
-                    "function": "项目搜索(通过关键词搜索开源项目)",
-                    "action": {"A1": "导航组件,Pagination分页,翻页操作,..."},
-                    "perception": {"P1": "数据展示组件,Card卡片,Star数识别,..."}
+                    "function": "Project search(search open-source projects by keyword)",
+                    "action": {"A1": "Navigation,Pagination,Page-turn action,..."},
+                    "perception": {"P1": "Data display,Card,Star count recognition,..."}
                 }
             }
         """

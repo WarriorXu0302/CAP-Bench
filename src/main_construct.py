@@ -11,55 +11,57 @@ from construct.datasets import SiteCardDataset, TaskDataset
 
 
 def run_pipeline(anchor_cluster: str = None, num_proposals: int = 5):
-    """运行完整Pipeline
+    """Run the full construction pipeline.
 
-    执行采样 -> 提议 -> 完善的完整流程。
+    Executes the complete sample -> propose -> refine workflow.
 
     Args:
-        anchor_cluster: 指定锚定集团，为None则自动选择（低频优先）
-        num_proposals: 每次采样生成的提案数量，默认5个
+        anchor_cluster: Anchor cluster to use. If ``None``, the
+            least-frequently-used cluster is auto-selected.
+        num_proposals: Number of task proposals to generate per
+            sampling round (default: 5).
 
     Returns:
-        tuple: (proposal_ids, task_ids) 生成的提案ID列表和任务ID列表
+        tuple: ``(proposal_ids, task_ids)`` — the generated proposal
+        and task identifiers.
 
     Raises:
-        FileNotFoundError: 当数据目录不存在时抛出
-        RuntimeError: 当LLM调用失败时抛出
+        FileNotFoundError: If a required data directory is missing.
+        RuntimeError: If an LLM invocation fails.
     """
-    # 初始化数据集
-    logger.info("初始化数据集...")
+    logger.info("Initializing datasets...")
     sitecard_dataset = SiteCardDataset()
     task_dataset = TaskDataset()
 
     logger.info(f"SiteCard: {sitecard_dataset}")
     logger.info(f"Task: {task_dataset}")
 
-    # Step 1: 采样
+    # Step 1: sampling
     logger.info("=" * 50)
-    logger.info("Step 1: 采样分析")
+    logger.info("Step 1: cluster sampling")
     sampler = Sampler(sitecard_dataset, task_dataset)
     sampling_result = sampler.run(anchor_cluster)
 
-    logger.info(f"锚定集团: {sampling_result['anchor_cluster']}")
-    logger.info(f"选中集团: {sampling_result['selected_clusters']}")
+    logger.info(f"Anchor cluster: {sampling_result['anchor_cluster']}")
+    logger.info(f"Selected clusters: {sampling_result['selected_clusters']}")
 
-    # Step 2: 任务提议
+    # Step 2: task proposal
     logger.info("=" * 50)
-    logger.info(f"Step 2: 生成 {num_proposals} 个任务提案")
+    logger.info(f"Step 2: generating {num_proposals} task proposals")
     proposer = Proposer(sitecard_dataset, task_dataset)
     try:
         proposal_ids = proposer.run(sampling_result, num_proposals)
     except Exception as e:
-        logger.error(f"任务提议失败: {e}")
+        logger.error(f"Task proposal failed: {e}")
         proposal_ids = []
 
     for pid in proposal_ids:
         proposal = task_dataset.get_proposal(pid)
         logger.info(f"  {pid}: {proposal.get('title', 'N/A')}")
 
-    # Step 3: 任务完善
+    # Step 3: task refinement
     logger.info("=" * 50)
-    logger.info("Step 3: 完善任务")
+    logger.info("Step 3: refining tasks")
     refiner = Refiner(sitecard_dataset, task_dataset)
 
     task_ids = []
@@ -67,24 +69,27 @@ def run_pipeline(anchor_cluster: str = None, num_proposals: int = 5):
         try:
             tid = refiner.run(pid)
             task_ids.append(tid)
-            logger.info(f"  {pid} -> {tid} ✓")
+            logger.info(f"  {pid} -> {tid} OK")
         except Exception as e:
-            logger.error(f"  {pid} 任务完善失败: {e}")
+            logger.error(f"  {pid} task refinement failed: {e}")
 
-    # 完成
     logger.info("=" * 50)
-    logger.info(f"完成: 生成 {len(proposal_ids)} 个提案, {len(task_ids)} 个任务")
+    logger.info(
+        f"Done: generated {len(proposal_ids)} proposals, {len(task_ids)} tasks"
+    )
 
     return proposal_ids, task_ids
 
 
 def setup_logging(level: str = "INFO") -> None:
-    """配置日志输出
+    """Configure logging output.
 
-    同时输出到控制台与 `logs/construct`，按天轮转并保留7天。
+    Logs are emitted to stderr and to ``logs/construct/`` with daily
+    rotation and a 7-day retention window.
 
     Args:
-        level (str): 日志级别，可选 DEBUG/INFO/WARNING/ERROR
+        level: Log level — one of ``DEBUG``, ``INFO``, ``WARNING``,
+            ``ERROR``.
     """
     logger.remove()
     logger.add(sys.stderr, level=level)
@@ -99,20 +104,23 @@ def setup_logging(level: str = "INFO") -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数
+    """Parse command-line arguments.
 
     Returns:
-        argparse.Namespace: 包含锚定集团、批处理数量和总任务数
+        argparse.Namespace: Parsed arguments — anchor cluster, batch
+        size, total task count, and log level.
     """
     p = argparse.ArgumentParser(
-        description="任务构建流水线",
+        description="CAP task construction pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument(
-        "--anchor", type=str, help="指定锚定集团名称，不指定则自动选择低频集团"
+        "--anchor",
+        type=str,
+        help="Anchor cluster name. If omitted, the lowest-usage cluster is auto-selected.",
     )
-    p.add_argument("--num", type=int, default=5, help="任务提案批处理数量")
-    p.add_argument("--total", type=int, default=500, help="计划构建任务总数")
+    p.add_argument("--num", type=int, default=5, help="Task proposal batch size")
+    p.add_argument("--total", type=int, default=500, help="Total number of tasks to construct")
     p.add_argument(
         "--log_level",
         type=str,
@@ -123,35 +131,36 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """Benchmark Pipeline 主入口
+    """Entry point of the CAP construction pipeline.
 
-    Benchmark任务自动构建Pipeline，包含三个阶段：
-        1. 采样：选择功能集团组合
-        2. 提议：生成任务语义骨架
-        3. 完善：细化为可执行任务
+    Runs three stages in a loop until the requested number of tasks
+    is produced:
+        1. Sampling — choose a coherent cluster combination.
+        2. Proposal — generate task semantic skeletons.
+        3. Refinement — instantiate concrete, executable tasks.
     """
     load_dotenv()
     args = parse_args()
     setup_logging(args.log_level)
 
-    # 计算需要循环的轮数
     iterations = math.ceil(args.total / args.num)
     logger.info(
-        f"开始批量处理: 计划构建 {args.total} 个任务, "
-        f"每批 {args.num} 个, 共 {iterations} 轮"
+        f"Starting batch construction: target {args.total} tasks, "
+        f"{args.num} per batch, {iterations} rounds total"
     )
 
     for i in range(iterations):
-        logger.info(f"第 {i + 1}/{iterations} 轮处理")
+        logger.info(f"Round {i + 1}/{iterations}")
         run_pipeline(args.anchor, args.num)
 
 
 if __name__ == "__main__":
     """
-    Benchmark任务自动构建Pipeline，支持CLI参数配置。
-        Example:
-            >>> python src/main_construct.py
-            >>> python src/main_construct.py --total 100 --num 10 --anchor "navigation"
-            >>> python src/main_construct.py --total 50 --num 5 --log_level DEBUG
+    CAP automatic task construction pipeline with CLI configuration.
+
+    Examples:
+        >>> python src/main_construct.py
+        >>> python src/main_construct.py --total 100 --num 10 --anchor "navigation"
+        >>> python src/main_construct.py --total 50 --num 5 --log_level DEBUG
     """
     main()

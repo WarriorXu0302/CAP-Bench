@@ -6,38 +6,48 @@ from openai import OpenAI
 
 
 class LLMService:
-    """LLM Service utility class
-    
-    Encapsulates OpenAI-compatible API conversation interface with automatic environment variable configuration reading.
-    """
+    """LLM service utility class.
 
-    _DEFAULT_MODEL = "google/gemini-3-pro"
+    Thin wrapper around an OpenAI-compatible chat completion API.
+    Credentials and the default model are read from environment
+    variables by default, so the same code works against OpenAI,
+    Azure OpenAI, vLLM, LiteLLM proxies, etc.
+    """
 
     def __init__(
         self,
         api_key: Optional[str] = None,
-        base_url: Optional[str] = None
+        base_url: Optional[str] = None,
+        default_model: Optional[str] = None,
     ) -> None:
-        """Initialize LLM service.
-        
-        Args:
-            api_key: API key, reads from OPENAI_API_KEY environment variable by default
-            base_url: API base URL, reads from OPENAI_BASE_URL environment variable by default
-            
-        Raises:
-            ValueError: Raised when API Key or Base URL is missing.
+        """Initialize the LLM service.
 
-        Example:
-            >>> llm = LLMService()
-            >>> llm = LLMService(api_key="sk-xxx", base_url="https://api.example.com")
+        Args:
+            api_key: API key. Defaults to ``OPENAI_API_KEY``.
+            base_url: API base URL. Defaults to ``OPENAI_BASE_URL``.
+            default_model: Default model id used when ``chat()`` is
+                called without a ``model`` argument. Defaults to
+                ``OPENAI_MODEL``.
+
+        Raises:
+            ValueError: If the API key, base URL, or default model is
+                missing.
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.base_url = base_url or os.getenv("OPENAI_BASE_URL")
+        self.default_model = default_model or os.getenv("OPENAI_MODEL")
 
         if not self.api_key or not self.base_url:
             raise ValueError(
-                "LLMService initialization failed: missing OPENAI_API_KEY or OPENAI_BASE_URL, "
-                "please set environment variables or pass parameters during initialization"
+                "LLMService initialization failed: missing OPENAI_API_KEY or "
+                "OPENAI_BASE_URL — set them in the environment or pass them "
+                "explicitly."
+            )
+        if not self.default_model:
+            raise ValueError(
+                "LLMService initialization failed: missing model id — set "
+                "OPENAI_MODEL in the environment or pass default_model "
+                "explicitly."
             )
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
@@ -70,7 +80,7 @@ class LLMService:
             ... )
             >>> print(response)
         """
-        model = model or self._DEFAULT_MODEL
+        model = model or self.default_model
 
         try:
             # Construct message list
