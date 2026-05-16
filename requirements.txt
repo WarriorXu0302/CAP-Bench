@@ -1,7 +1,4 @@
-loguru==0.7.3
-openai
-python-dotenv
-Requests
-tqdm==4.67.1
-loguru==0.7.3
-pytest==8.4.2
+datasets>=2.19.0
+loguru>=0.7.3
+openai>=1.0.0
+python-dotenv>=1.0.0
