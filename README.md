@@ -5,6 +5,7 @@
 </p>
 
 <p align="center">
+  <a href="#citation"><img alt="COLM 2026" src="https://img.shields.io/badge/COLM%202026-Accepted-7C3AED"></a>
   <a href="https://huggingface.co/datasets/Warrior0302/CAP"><img alt="Dataset on HuggingFace" src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Warrior0302%2FCAP-yellow"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"></a>
   <a href="#"><img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-blue"></a>
@@ -195,10 +196,14 @@ CAP-Bench is released under the [Apache License, Version 2.0](LICENSE). See [`NO
 ## Citation
 
 ```bibtex
-@misc{cap2026,
-    title  = {CAP: A Scalable Benchmark for Evaluating Cross-Site Browser Agents with Complex Actions and Perception},
-    year   = {2026},
-    note   = {Preprint, arXiv link forthcoming}
+@inproceedings{xu2026cap,
+    title     = {CAP: A Scalable Benchmark for Evaluating Cross-Site Browser Agents with Complex Actions and Perception},
+    author    = {Xu, Zejun and Chen, Taiyi and Li, Jin and Gu, Yongtong and Cheng, Qi
+                 and Lv, Aixuan and Zhu, Shuai and Zhu, Pengfei and Yang, Kaichen
+                 and Sun, Boyu and Yang, Yixian and Xie, Mulong and Liu, Xin
+                 and Li, Dagang and Ma, Xiaoteng and Wang, Hongru},
+    booktitle = {Third Conference on Language Modeling (COLM)},
+    year      = {2026}
 }
 ```
 
