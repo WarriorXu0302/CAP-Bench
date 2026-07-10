@@ -211,7 +211,7 @@ def star_ok(star: Optional[float]) -> bool:
             return False
         return float(star) >= 4.0 - 1e-6
     except Exception:
-    return False
+        return False
 
 
 # --------------------------------------------------------------------------- #
