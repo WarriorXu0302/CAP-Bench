@@ -29,10 +29,10 @@ This repository hosts:
 | | Link |
 |---|---|
 | Dataset (public split, 192 tasks) | [`Warrior0302/CAP`](https://huggingface.co/datasets/Warrior0302/CAP) on Hugging Face |
-| Paper (arXiv) | *Coming soon* |
+| Paper (COLM 2026) | [OpenReview](https://openreview.net/forum?id=Q0pFLVle7J) |
 | Issues / discussion | [GitHub issues](https://github.com/WarriorXu0302/CAP-Bench/issues) |
 
-> The held-out **private split (228 tasks)** is reserved for contamination-resistant evaluation. Submission instructions for the leaderboard will be published with the arXiv release.
+> The held-out **private split (228 tasks)** is reserved for contamination-resistant evaluation. See the [leaderboard](https://warriorxu0302.github.io/CAP-Bench/leaderboard.html) for submission instructions.
 
 ## Repository Layout
 
@@ -203,7 +203,8 @@ CAP-Bench is released under the [Apache License, Version 2.0](LICENSE). See [`NO
                  and Sun, Boyu and Yang, Yixian and Xie, Mulong and Liu, Xin
                  and Li, Dagang and Ma, Xiaoteng and Wang, Hongru},
     booktitle = {Third Conference on Language Modeling (COLM)},
-    year      = {2026}
+    year      = {2026},
+    url       = {https://openreview.net/forum?id=Q0pFLVle7J}
 }
 ```
 
