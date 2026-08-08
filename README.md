@@ -220,4 +220,10 @@ CAP-Bench is released under the [Apache License, Version 2.0](LICENSE). See [`NO
 
 ## Acknowledgements
 
+This work was supported by the Fund for the Development of Science and Technology (FDCT) of Macau (Grant No. 0010/2024/AGJ).
+
 The CAP-Eval framework extends [Mind2Web2](https://github.com/OSU-NLP-Group/Mind2Web2) (Gou et al., 2025). We thank the OSU NLP Group for releasing it under MIT, on which we built our verifiable rubric-tree extension. See `NOTICE` for details.
+
+### About the Teams
+
+- **[FellouAI](https://fellou.ai/)** — the team behind Fellou, an agentic browser where AI does not just chat but acts: browsing, automating, and executing multi-step tasks across websites. Part of this work was done during internships at FellouAI, and Fellou is among the commercial agents evaluated on CAP.
