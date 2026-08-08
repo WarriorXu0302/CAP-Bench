@@ -7,6 +7,7 @@
 <p align="center">
   <a href="#citation"><img alt="COLM 2026" src="https://img.shields.io/badge/COLM%202026-Accepted-7C3AED"></a>
   <a href="https://huggingface.co/datasets/Warrior0302/CAP-Bench"><img alt="Dataset on HuggingFace" src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Warrior0302%2FCAP--Bench-yellow"></a>
+  <a href="https://warriorxu0302.github.io/CAP-Bench/"><img alt="Project Page" src="https://img.shields.io/badge/Project%20Page-CAP--Bench-1A56C4"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"></a>
   <a href="#"><img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-blue"></a>
   <a href="#"><img alt="Tasks" src="https://img.shields.io/badge/Tasks-420-success"></a>
@@ -17,7 +18,12 @@
   <img src="assets/figures/fig1_overview.png" alt="CAP overview" width="820"/>
 </p>
 
-CAP targets three sources of difficulty in real-world web browsing — **C**ross-site workflows, complex **A**ctions, and challenging visual **P**erception — and evaluates agents through a *verifiable agent-as-a-judge* framework with explicit execution and perception checkpoints. It contains **420 tasks** across **108 real-world websites** in **24 functional domains**.
+CAP targets three sources of difficulty in real-world web browsing — **C**ross-site workflows, complex **A**ctions, and challenging visual **P**erception — and evaluates agents through a *verifiable agent-as-a-judge* framework with explicit execution and perception checkpoints. It contains **420 tasks** (192 public / 228 held-out) across **108 real-world websites** in **24 functional domains**. Even the strongest evaluated agent reaches only **8.0% Success Rate**, and perception-heavy interactions are the dominant failure mode (COLM 2026, §5).
+
+## News
+
+- **2026-08** — Camera-ready released. Code, the 192-task public split, and the [leaderboard](https://warriorxu0302.github.io/CAP-Bench/leaderboard.html) are live. 🚀
+- **2026-07** — CAP is accepted at **COLM 2026**! 🎉
 
 This repository hosts:
 
@@ -165,7 +171,7 @@ For each website *w* we annotate a *site card* `s_w = ⟨F, A, P⟩` of user-fac
   <img src="assets/figures/fig3_evaluation.png" alt="CAP-Eval framework" width="900"/>
 </p>
 
-Each task is automatically converted into a Python evaluation script that materializes a hierarchical rubric tree. Leaves are typed as **action**, **perception**, or **other**, and may be marked critical (failure zeroes its parent). A judge agent traverses the tree, extracts structured information from the agent's answer, and verifies each claim against live webpages.
+Each task is automatically converted into a Python evaluation script that materializes a hierarchical rubric tree. Leaves are typed as **action**, **perception**, or **other**, and may be marked critical (failure zeroes its parent). A judge agent traverses the tree, extracts structured information from the agent's answer, and verifies each claim against live webpages. The judge (GPT-4o backbone) reaches **96% agreement with human graders** (κ = 0.84), and the system ranking is preserved across 5 alternative judge backbones (paper, Appendix I).
 
 ## Leaderboard
 
@@ -186,6 +192,8 @@ Results reported in the COLM 2026 paper (§5). Numbers are means with one standa
 | **Human**              | 35.0 ± 4.5         | 10.0 ± 2.5   | 35.0 ± 3.0   | 34.0 ± 2.8   |
 
 Even the strongest agent reaches only **8.0%** Success Rate, and perception-heavy interactions remain a major bottleneck — see paper §5 for fine-grained findings.
+
+**Evaluation protocol** (paper §5.1): fixed 198-task evaluation set; commercial agents accessed via official interfaces with default configurations during **Nov–Dec 2025**; Browser-Use baselines run with default configs and a 50-step cap; Human baseline from twelve CS graduate students (1 h/task) scored by the same judge. CAP runs on the live web — scores drift as websites evolve, so always report your evaluation date.
 
 ## Cache Manager
 
