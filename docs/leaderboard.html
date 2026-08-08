@@ -28,11 +28,11 @@
 
 <header class="hero" style="padding:72px 0 36px;">
   <div class="container">
-    <span class="hero-badge"><span class="pulse"></span>Public split · 192 tasks</span>
+    <span class="hero-badge"><span class="pulse"></span>Fixed evaluation set · 198 tasks</span>
     <h1 style="font-size:clamp(1.8rem, 3.6vw, 2.6rem);">Leaderboard</h1>
     <p class="subtitle" style="font-size:1.05rem;">
-      Browser agents evaluated by CAP's verifiable agent-as-a-judge framework.
-      Click any column header to sort.
+      Browser agents evaluated by CAP's verifiable agent-as-a-judge framework
+      on a fixed 198-task evaluation set. Click any column header to sort.
     </p>
     <p style="font-size:0.9rem; color:var(--muted); margin:0;">
       Last updated: <span id="lb-updated" style="color:var(--accent); font-weight:600;">—</span>
@@ -64,6 +64,16 @@
       <li><strong>Time</strong> / <strong>Output</strong> — average end-to-end wall-clock time and output length per task.</li>
     </ul>
 
+
+    <h2 style="margin-top:48px;">Evaluation Protocol</h2>
+    <ul style="font-size:0.96rem; line-height:1.85;">
+      <li><strong>Evaluation set</strong> — a fixed set of 198 CAP tasks. The 192-task public split is released in full; the remaining 228 tasks are held out against test-set contamination.</li>
+      <li><strong>Commercial agents</strong> — accessed through official interfaces with default configurations during <strong>November–December 2025</strong>. CAP runs on the live web, so absolute scores drift as websites evolve; always report your evaluation date.</li>
+      <li><strong>Open-source baselines</strong> — Browser-Use with GPT-5, Claude-4.5-Sonnet, and DeepSeek-V4-Flash backbones; default configurations, max 50 reasoning–action steps per task.</li>
+      <li><strong>Judge</strong> — verifiable agent-as-a-judge with a GPT-4o backbone; 96% agreement with human graders (&kappa;=0.84), and system ranking is preserved across 5 alternative judge backbones.</li>
+      <li><strong>Human baseline</strong> — twelve CS graduate students, one-hour limit per task, scored by the same judge and rubrics as the agents.</li>
+    </ul>
+
     <h2 style="margin-top:48px;">How to Submit</h2>
     <p>
       To add a new system to this leaderboard,
@@ -75,6 +85,7 @@
       <li>The four CAP metrics (Partial Completion, Success Rate, Complex-A, Complex-P) with standard deviations.</li>
       <li>Average wall-clock time and output length per task.</li>
       <li>A link to your evaluation logs (preferred) or a brief description of the evaluation setup.</li>
+      <li><strong>Your evaluation date</strong> — CAP runs against the live web, so scores are only comparable with their time window.</li>
     </ol>
     <p style="color:var(--muted);">We review and merge submissions on a rolling basis.</p>
   </div>
@@ -84,7 +95,7 @@
   <div class="container">
     <p>
       <a href="https://github.com/WarriorXu0302/CAP-Bench">GitHub</a> ·
-      <a href="https://huggingface.co/datasets/Warrior0302/CAP">Hugging Face</a> ·
+      <a href="https://huggingface.co/datasets/Warrior0302/CAP-Bench">Hugging Face</a> ·
       <a href="https://github.com/WarriorXu0302/CAP-Bench/issues">Report an issue</a> ·
       Released under the <a href="https://github.com/WarriorXu0302/CAP-Bench/blob/main/LICENSE">Apache 2.0</a> license
     </p>
