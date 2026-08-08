@@ -227,3 +227,4 @@ The CAP-Eval framework extends [Mind2Web2](https://github.com/OSU-NLP-Group/Mind
 ### About the Teams
 
 - **[FellouAI](https://fellou.ai/)** — the team behind Fellou, an agentic browser where AI does not just chat but acts: browsing, automating, and executing multi-step tasks across websites. Part of this work was done during internships at FellouAI, and Fellou is among the commercial agents evaluated on CAP.
+- **[ARGUS Lab](https://github.com/argus-lab)** — a newly founded independent research group working on LLM-based agents. CAP is among its first publications.
