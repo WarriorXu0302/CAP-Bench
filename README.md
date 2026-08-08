@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="#citation"><img alt="COLM 2026" src="https://img.shields.io/badge/COLM%202026-Accepted-7C3AED"></a>
-  <a href="https://huggingface.co/datasets/Warrior0302/CAP"><img alt="Dataset on HuggingFace" src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Warrior0302%2FCAP-yellow"></a>
+  <a href="https://huggingface.co/datasets/Warrior0302/CAP-Bench"><img alt="Dataset on HuggingFace" src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Warrior0302%2FCAP--Bench-yellow"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"></a>
   <a href="#"><img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-blue"></a>
   <a href="#"><img alt="Tasks" src="https://img.shields.io/badge/Tasks-420-success"></a>
@@ -28,7 +28,8 @@ This repository hosts:
 
 | | Link |
 |---|---|
-| Dataset (public split, 192 tasks) | [`Warrior0302/CAP`](https://huggingface.co/datasets/Warrior0302/CAP) on Hugging Face |
+| Project page | [warriorxu0302.github.io/CAP-Bench](https://warriorxu0302.github.io/CAP-Bench/) |
+| Dataset (public split, 192 tasks) | [`Warrior0302/CAP-Bench`](https://huggingface.co/datasets/Warrior0302/CAP-Bench) on Hugging Face |
 | Paper (COLM 2026) | [OpenReview](https://openreview.net/forum?id=Q0pFLVle7J) |
 | Issues / discussion | [GitHub issues](https://github.com/WarriorXu0302/CAP-Bench/issues) |
 
@@ -92,7 +93,7 @@ Or load directly in Python:
 ```python
 from datasets import load_dataset
 
-ds = load_dataset("Warrior0302/CAP")
+ds = load_dataset("Warrior0302/CAP-Bench")
 print(ds["test"][0])
 # {'task id': 'task-035e06', 'instruction': '...'}
 ```
@@ -168,7 +169,7 @@ Each task is automatically converted into a Python evaluation script that materi
 
 ## Leaderboard
 
-Results on the public split. Numbers are means with one standard deviation.
+Results reported in the COLM 2026 paper (§5). Numbers are means with one standard deviation where recorded.
 
 | System                 | Partial Completion | Success Rate | Complex-A    | Complex-P    |
 |------------------------|--------------------|--------------|--------------|--------------|
@@ -179,6 +180,7 @@ Results on the public split. Numbers are means with one standard deviation.
 | Dia                    | 19.0 ± 2.0         | 4.0 ± 1.0    | 28.0 ± 1.5   | 23.0 ± 2.2   |
 | Genspark               | 16.0 ± 2.0         | 5.0 ± 1.0    | 30.0 ± 2.1   | 28.0 ± 1.8   |
 | **Browser-Use**        |                    |              |              |              |
+| DeepSeek-V4-Flash      | 25.0               | 2.9          | 33.7         | 34.2         |
 | Claude-4.5-Sonnet      | 21.0 ± 3.0         | 5.0 ± 2.0    | 32.0 ± 2.4   | 32.0 ± 2.5   |
 | GPT-5                  | 15.0 ± 1.0         | 2.0 ± 1.0    | 29.0 ± 2.0   | 23.0 ± 1.5   |
 | **Human**              | 35.0 ± 4.5         | 10.0 ± 2.5   | 35.0 ± 3.0   | 34.0 ± 2.8   |

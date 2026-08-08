@@ -7,7 +7,8 @@
 <meta name="description" content="A scalable benchmark for evaluating browser agents on cross-site web tasks demanding complex actions and visual perception." />
 <meta property="og:title" content="CAP-Bench" />
 <meta property="og:description" content="A scalable benchmark for evaluating cross-site browser agents with complex actions and perception." />
-<meta property="og:image" content="assets/fig1_overview.png" />
+<meta property="og:image" content="https://warriorxu0302.github.io/CAP-Bench/assets/fig1_overview.png" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -47,8 +48,8 @@
 
     <p class="authors">
       Zejun Xu<sup>*†1,4</sup>,
-      Taiyi Chen<sup>*2</sup>,
-      Jin Li<sup>*</sup>,
+      Taiyi Chen<sup>*2,5</sup>,
+      Jin Li<sup>*5</sup>,
       Yongtong Gu<sup>*3</sup>,
       Qi Cheng<sup>†4</sup>,
       Aixuan Lv<sup>4</sup>,
@@ -59,17 +60,18 @@
       Yixian Yang<sup>1</sup>,
       Mulong Xie<sup>4</sup>,
       Xin Liu<sup>1</sup>,
-      Dagang Li<sup>1</sup>,
-      Xiaoteng Ma<sup>2</sup>,
-      Hongru Wang<sup>5</sup>
+      Dagang Li<sup>&#9993;1</sup>,
+      Xiaoteng Ma<sup>&#9993;2</sup>,
+      Hongru Wang<sup>&#9993;6</sup>
     </p>
     <p class="affiliations">
       <sup>1</sup>Macau University of Science and Technology &nbsp;·&nbsp;
       <sup>2</sup>Tsinghua University &nbsp;·&nbsp;
       <sup>3</sup>Southeast University &nbsp;·&nbsp;
       <sup>4</sup>FellouAI &nbsp;·&nbsp;
-      <sup>5</sup>The University of Edinburgh
-      <br/><sup>*</sup> Equal contribution &nbsp; <sup>†</sup> Work done during internship at FellouAI
+      <sup>5</sup>ARGUS Lab &nbsp;·&nbsp;
+      <sup>6</sup>The University of Edinburgh
+      <br/><sup>*</sup> Equal contribution &nbsp; <sup>†</sup> Work done during internship at FellouAI &nbsp; <sup>&#9993;</sup> Corresponding authors
     </p>
 
     <div class="btn-row">
@@ -79,7 +81,7 @@
       <a class="btn outline" href="https://github.com/WarriorXu0302/CAP-Bench" target="_blank" rel="noopener">
         <span class="icon">💻</span> Code
       </a>
-      <a class="btn outline" href="https://huggingface.co/datasets/Warrior0302/CAP" target="_blank" rel="noopener">
+      <a class="btn outline" href="https://huggingface.co/datasets/Warrior0302/CAP-Bench" target="_blank" rel="noopener">
         <span class="icon">🤗</span> Dataset
       </a>
       <a class="btn gradient" href="leaderboard.html">
@@ -95,6 +97,16 @@
     </div>
   </div>
 </header>
+
+<section id="news">
+  <div class="container-sm">
+    <span class="eyebrow">News</span>
+    <ul style="list-style:none;padding:0;margin:0.6rem 0 0;display:grid;gap:0.55rem;">
+      <li style="display:flex;gap:0.7rem;align-items:baseline;"><strong style="white-space:nowrap;color:var(--accent);font-variant-numeric:tabular-nums;">2026-08</strong><span>Camera-ready released — code, 192-task public split, and leaderboard are live. 🚀</span></li>
+      <li style="display:flex;gap:0.7rem;align-items:baseline;"><strong style="white-space:nowrap;color:var(--accent);font-variant-numeric:tabular-nums;">2026-07</strong><span>CAP is accepted at <strong>COLM 2026</strong>! 🎉</span></li>
+    </ul>
+  </div>
+</section>
 
 <section id="abstract">
   <div class="container-sm">
@@ -207,6 +219,12 @@
       A judge agent traverses the tree, extracts structured information from the agent's answer,
       and verifies each claim against live webpages.
     </p>
+
+    <div class="stats" style="margin-top:1.4rem;">
+      <div class="stat"><span class="num">96%</span><span class="label">Judge–human agreement (&kappa;=0.84)</span></div>
+      <div class="stat"><span class="num">96%</span><span class="label">Rubrics rated faithful</span></div>
+      <div class="stat"><span class="num">5</span><span class="label">Judge backbones, ranking preserved</span></div>
+    </div>
   </div>
 </section>
 
@@ -221,14 +239,14 @@
       <div class="finding">
         <span class="num">Finding 1</span>
         <h3>Limited capability overall</h3>
-        <p>Across 7 SOTA browser agents, partial-completion scores cluster around 15–24%. The strongest
+        <p>Across 8 SOTA browser agent systems, partial-completion scores cluster around 15–25%. The strongest
           commercial system (Comet) reaches 48% only by spending an order of magnitude more output tokens.</p>
       </div>
       <div class="finding">
         <span class="num">Finding 2</span>
         <h3>Perception is the bottleneck</h3>
-        <p>Systems trail humans by ~9 points more on Complex-P than on Complex-A. Visual reasoning over
-          rendered charts, badges, and expansion states is the dominant failure mode — not UI manipulation per se.</p>
+        <p>Nearly every agent scores higher on Complex-A than Complex-P, while humans are balanced — and
+          <em>value reading</em> from rendered charts scores near zero. Visual reasoning, not UI manipulation, is the dominant failure mode.</p>
       </div>
       <div class="finding">
         <span class="num">Finding 3</span>
@@ -280,7 +298,7 @@
   <div class="container">
     <p>
       <a href="https://github.com/WarriorXu0302/CAP-Bench">GitHub</a> ·
-      <a href="https://huggingface.co/datasets/Warrior0302/CAP">Hugging Face</a> ·
+      <a href="https://huggingface.co/datasets/Warrior0302/CAP-Bench">Hugging Face</a> ·
       <a href="https://github.com/WarriorXu0302/CAP-Bench/issues">Report an issue</a> ·
       Released under the <a href="https://github.com/WarriorXu0302/CAP-Bench/blob/main/LICENSE">Apache 2.0</a> license
     </p>
