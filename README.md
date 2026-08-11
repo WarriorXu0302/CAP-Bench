@@ -6,6 +6,7 @@
 
 <p align="center">
   <a href="#citation"><img alt="COLM 2026" src="https://img.shields.io/badge/COLM%202026-Accepted-7C3AED"></a>
+  <a href="https://arxiv.org/abs/2608.08392"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2608.08392-b31b1b"></a>
   <a href="https://huggingface.co/datasets/Warrior0302/CAP-Bench"><img alt="Dataset on HuggingFace" src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Warrior0302%2FCAP--Bench-yellow"></a>
   <a href="https://warriorxu0302.github.io/CAP-Bench/"><img alt="Project Page" src="https://img.shields.io/badge/Project%20Page-CAP--Bench-1A56C4"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"></a>
@@ -36,7 +37,7 @@ This repository hosts:
 |---|---|
 | Project page | [warriorxu0302.github.io/CAP-Bench](https://warriorxu0302.github.io/CAP-Bench/) |
 | Dataset (public split, 192 tasks) | [`Warrior0302/CAP-Bench`](https://huggingface.co/datasets/Warrior0302/CAP-Bench) on Hugging Face |
-| Paper (COLM 2026) | [OpenReview](https://openreview.net/forum?id=Q0pFLVle7J) |
+| Paper (COLM 2026) | [arXiv:2608.08392](https://arxiv.org/abs/2608.08392) · [OpenReview](https://openreview.net/forum?id=Q0pFLVle7J) |
 | Issues / discussion | [GitHub issues](https://github.com/WarriorXu0302/CAP-Bench/issues) |
 
 > The held-out **private split (228 tasks)** is reserved for contamination-resistant evaluation. See the [leaderboard](https://warriorxu0302.github.io/CAP-Bench/leaderboard.html) for submission instructions.
@@ -214,6 +215,8 @@ CAP-Bench is released under the [Apache License, Version 2.0](LICENSE). See [`NO
                  and Li, Dagang and Ma, Xiaoteng and Wang, Hongru},
     booktitle = {Third Conference on Language Modeling (COLM)},
     year      = {2026},
+    eprint    = {2608.08392},
+    archivePrefix = {arXiv},
     url       = {https://openreview.net/forum?id=Q0pFLVle7J}
 }
 ```
