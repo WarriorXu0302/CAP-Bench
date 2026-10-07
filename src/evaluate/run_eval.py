@@ -36,8 +36,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Override output directory for results/logs")
     p.add_argument("--cache_root", type=Path,
                    help="Override cache directory")
-    p.add_argument("--eval_version", default="2026_05_16",
-                   help="Version of evaluation scripts to use (default: 2026_05_16)")
+    p.add_argument("--eval_version", default="2026_10_07",
+                   help="Version of evaluation scripts to use (default: 2026_10_07)")
 
     # LLM configuration
     p.add_argument("--llm_provider", choices=["openai", "azure_openai"],
