@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+from datetime import date
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -10,7 +11,7 @@ from tqdm import tqdm
 
 from cap_eval.eval_runner import evaluate_task, merge_all_results, generate_result_summary
 from cap_eval.llm_client.base_client import LLMClient
-from cap_eval.utils.path_config import PathConfig
+from cap_eval.utils.path_config import DEFAULT_EVAL_VERSION, PathConfig, results_for_run
 
 
 # --------------------------------------------------------------------------- #
@@ -36,8 +37,11 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Override output directory for results/logs")
     p.add_argument("--cache_root", type=Path,
                    help="Override cache directory")
-    p.add_argument("--eval_version", default="2026_10_07",
-                   help="Version of evaluation scripts to use (default: 2026_10_07)")
+    p.add_argument("--eval_version", default=DEFAULT_EVAL_VERSION,
+                   help="Version of evaluation scripts to use (default: %(default)s)")
+
+    p.add_argument("--evaluation_date", type=date.fromisoformat, default=date.today(),
+                   metavar="YYYY-MM-DD", help="Reference date for relative task instructions (default: local date at run start)")
 
     # LLM configuration
     p.add_argument("--llm_provider", choices=["openai", "azure_openai"],
@@ -93,6 +97,7 @@ async def evaluate_single_task(
         cache_dir=paths.cache_root,
         output_dir=paths.eval_results_root,
         script_path=script_path,
+        evaluation_date=args.evaluation_date,
         dump_cache=args.dump_cache,
         is_self_debug=args.self_debug,
         overwrite=args.overwrite,
@@ -268,6 +273,7 @@ def main() -> None:
     logging.info(f"Eval scripts root: {paths.eval_scripts_root}")
     logging.info(f"Eval results root: {paths.eval_results_root}")
     logging.info(f"Cache root: {paths.cache_root}")
+    logging.info(f"Evaluation date: {args.evaluation_date}")
     logging.info(f"LLM Provider: {args.llm_provider}")
     logging.info("Concurrency Settings:")
     if not args.task_id:
@@ -306,7 +312,8 @@ def main() -> None:
     if results:
         logging.info("=" * 60)
         logging.info("Generating agent summary...")
-        summary = generate_result_summary(paths.eval_results_root, args.agent_name)
+        results_root = results_for_run(paths.eval_results_root, args.eval_version, args.evaluation_date)
+        summary = generate_result_summary(results_root, args.agent_name)
         if summary:
             num_runs = summary["num_runs"]
             pass_key = f"pass_at_{num_runs}"

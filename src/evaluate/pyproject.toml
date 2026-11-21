@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 
 dependencies = [
     "openai",
+    "instructor",
     "backoff",
     "pydantic>=1.10",
     "tqdm",

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import logging
 import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
+from functools import partial
 from pathlib import Path
 from typing import Dict, List, Union, Optional
 
@@ -13,6 +15,7 @@ from tqdm import tqdm
 
 from .utils.cache_filesys import CacheFileSys
 from .utils.load_eval_script import load_eval_script
+from .utils.path_config import results_for_run
 from .utils.logging_setup import create_logger, cleanup_logger
 
 
@@ -80,6 +83,9 @@ async def _eval_one_answer(
         llm_semaphore: asyncio.Semaphore,
         output_dir: Path,
         is_self_debug: bool = False,
+        *,
+        evaluation_date: date,
+        eval_version: str,
 ):
     """Evaluate a single answer file and write its result JSON / logs."""
 
@@ -143,6 +149,8 @@ async def _eval_one_answer(
             logger=logger,
             model="o4-mini",
         )
+        result["evaluation_date"] = evaluation_date.isoformat()
+        result["eval_version"] = eval_version
 
         logger.info(
             f"✅ Evaluation completed with score: {result.get('final_score', 'unknown')}",
@@ -212,6 +220,7 @@ async def evaluate_task(
         max_concurrent_answers: int = 3,
         webpage_semaphore: Optional[asyncio.Semaphore] = None,
         llm_semaphore: Optional[asyncio.Semaphore] = None,
+        evaluation_date: Optional[date] = None,
 ) -> List[Dict]:
     """Evaluate all answers for a specific task and agent.
 
@@ -243,6 +252,8 @@ async def evaluate_task(
         Semaphore for controlling concurrent webpage retrieval operations
     llm_semaphore : Optional[asyncio.Semaphore], default None
         Semaphore for controlling concurrent LLM API requests
+    evaluation_date : Optional[date], default None
+        Calendar date on which the agent answered the task. Defaults to today.
 
     Returns
     -------
@@ -253,8 +264,9 @@ async def evaluate_task(
     # ------------------------------------------------------------------
     # 0. Setup paths & ensure dirs exist
     # ------------------------------------------------------------------
+    evaluation_date = evaluation_date or date.today()
     answer_root = Path(answer_dir) / agent_name / task_id
-    output_root = Path(output_dir)
+    output_root = results_for_run(Path(output_dir), Path(script_path).parent.name, evaluation_date)
     cache_root = Path(cache_dir) / agent_name
 
     output_root.mkdir(parents=True, exist_ok=True)
@@ -292,6 +304,8 @@ async def evaluate_task(
         # ------------------------------------------------------------------
         main_logger.info("📜 Loading evaluation script")
         eval_fn = load_eval_script(script_path)
+        if "evaluation_date" in inspect.signature(eval_fn).parameters:
+            eval_fn = partial(eval_fn, evaluation_date=evaluation_date)
 
         cache_path = cache_root / f"{task_id}"
         cache = CacheFileSys(task_dir=str(cache_path))
@@ -405,6 +419,8 @@ async def evaluate_task(
                         llm_semaphore,
                         output_root,
                         is_self_debug,
+                        evaluation_date=evaluation_date,
+                        eval_version=Path(script_path).parent.name,
                     )
 
                     if isinstance(res, dict):

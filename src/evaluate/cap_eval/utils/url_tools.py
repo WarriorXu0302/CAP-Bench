@@ -1,12 +1,32 @@
 import re
 from typing import List
-from urllib.parse import urldefrag, unquote, urlparse, parse_qs, urlencode, urlunparse
+from urllib.parse import ParseResult, urldefrag, unquote, urlparse, parse_qs, urlencode, urlunparse
 
 import validators
 from pydantic import BaseModel
 
 class URLs(BaseModel):
     urls: List[str]
+
+def parse_site_url(value: str | None, *domains: str) -> ParseResult | None:
+    """Parse a cited web address and match the hostname, including subdomains."""
+    if not value:
+        return None
+    address = value.strip()
+    if not address or any(c.isspace() for c in address) or "\\" in address:
+        return None
+    if "://" not in address:
+        address = "https://" + address
+    try:
+        parsed = urlparse(address)
+        host = (parsed.hostname or "").rstrip(".")
+    except ValueError:
+        return None
+    if parsed.scheme not in {"http", "https"} or parsed.username is not None:
+        return None
+    if any(host == domain or host.endswith("." + domain) for domain in domains):
+        return parsed
+    return None
 
 def _is_valid_url(u: str) -> bool:
     return validators.url(u) is True

@@ -19,8 +19,19 @@ print(paths.default_script_for("task_001"))
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Optional
+
+
+DEFAULT_EVAL_VERSION = "2026_11_20"
+
+
+def results_for_run(root: Path, version: str, evaluation_date: date) -> Path:
+    """Keep corrected scores and dated evaluations separate from old results."""
+    if version == "2026_11_20":
+        return root / version / evaluation_date.isoformat()
+    return root
 
 
 @dataclass
@@ -63,7 +74,7 @@ class PathConfig:
         self.cache_root = self.project_root / "cache"
         
         # Default eval version
-        self.eval_version = "2026_10_07"
+        self.eval_version = DEFAULT_EVAL_VERSION
 
         # Scripts
         self.run_eval_script = self.project_root / "run_eval.py"

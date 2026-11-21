@@ -97,6 +97,20 @@ python run_eval.py --agent_name <agent_name>
 python run_eval.py --agent_name <agent_name> --task_id <task_id>
 ```
 
+### Regrading saved answers
+
+For relative instructions such as “this year” or “this coming Friday”, pass the
+date the answers were produced. Use separate runs for batches from different
+dates. For example, to regrade answers collected on November 18, 2026:
+
+```bash
+python run_eval.py --agent_name my_agent --eval_version 2026_11_20 --evaluation_date 2026-11-18
+```
+
+The corrected grader handles grouped numbers, alternative sources, revised URL
+formats, and conditional rubric items. Selecting `--eval_version 2026_10_07`
+uses the archived task scripts. Report the grader version when comparing scores.
+
 ### Full Parameter Reference
 
 | Parameter | Default | Description |
@@ -107,7 +121,8 @@ python run_eval.py --agent_name <agent_name> --task_id <task_id>
 | `--eval_scripts_root` | `eval_scripts/` | Root directory for evaluation scripts |
 | `--eval_results_root` | `eval_results/` | Root directory for evaluation result output |
 | `--cache_root` | `cache/` | Root directory for webpage cache |
-| `--eval_version` | `2026_03_13` | Evaluation script version |
+| `--eval_version` | `2026_11_20` | Evaluation script version |
+| `--evaluation_date` | Local date at launch | Date the agent answered the task, in YYYY-MM-DD format |
 | `--llm_provider` | `openai` | LLM provider (`openai` or `azure_openai`) |
 | `--max_concurrent_tasks` | `3` | Maximum number of concurrent task evaluations |
 | `--max_concurrent_answers` | `3` | Maximum number of concurrent answer evaluations per task |
@@ -163,10 +178,14 @@ See [cache_manager_web/README.md](cache_manager_web/README.md) for details.
 
 ## Evaluation Results
 
-Evaluation results are stored in `eval_results/<agent_name>/`. Use `count.py` to compute aggregate statistics:
+The corrected grader writes results to
+`eval_results/2026_11_20/<evaluation_date>/<agent_name>/`. The archived
+`2026_10_07` grader keeps its original `eval_results/<agent_name>/` layout.
+The runner writes per-task and per-agent summaries. To aggregate a single
+agent and date across runs with `count.py`, pass the matching directory:
 
 ```bash
-python count.py
+python -c "from count import calculate_eval_metrics; calculate_eval_metrics('eval_results/2026_11_20/2026-11-18/my_agent')"
 ```
 
 Output metrics include:
